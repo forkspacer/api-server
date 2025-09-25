@@ -25,7 +25,7 @@ func NewRouter(logger *zap.Logger) http.Handler {
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 	}))
 
-	baseRouter.Mount("/api", apiRouter)
+	baseRouter.Mount("/v1", apiRouter)
 
 	return baseRouter
 }

@@ -5,12 +5,19 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/go-chi/chi/v5"
 )
 
-func Run(ctx context.Context, router http.Handler) error {
+func Run(ctx context.Context, port uint16, routers ...http.Handler) error {
+	baseRouter := chi.NewRouter()
+	for _, router := range routers {
+		baseRouter.Mount("/api", router)
+	}
+
 	httpServer := &http.Server{
-		Addr:    ":8421",
-		Handler: router,
+		Addr:    fmt.Sprintf(":%d", port),
+		Handler: baseRouter,
 	}
 
 	listenerErrChan := make(chan error)

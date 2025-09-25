@@ -8,6 +8,7 @@ import (
 
 	"github.com/forkspacer/api-server/pkg/api"
 	apiv1 "github.com/forkspacer/api-server/pkg/api/v1"
+	"github.com/forkspacer/api-server/pkg/config"
 	"go.uber.org/zap"
 )
 
@@ -16,16 +17,32 @@ func main() {
 	defer cancel()
 	go listenForTermination(func() { cancel() })
 
-	logger, err := zap.NewProduction()
+	logger, err := zap.NewDevelopment()
 	if err != nil {
 		panic(err)
 	}
 
-	logger.Info("Starting API server")
-	if err := api.Run(ctx, apiv1.NewRouter(logger)); err != nil {
-		logger.Error("API server failed to run", zap.Error(err))
+	apiConfig, errs := config.NewAPIConfig()
+	if errs != nil {
+		for _, err := range errs.Errors {
+			logger.Error("Config error", zap.Error(err))
+		}
+		return
 	}
-	logger.Info("API server stopped")
+
+	// Switch to production logger if not in development mode.
+	if !apiConfig.Dev {
+		logger, err = zap.NewProduction()
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	logger.Info("Starting API server", zap.Uint16("port", apiConfig.APIPort))
+	if err := api.Run(ctx, apiConfig.APIPort, apiv1.NewRouter(logger)); err != nil {
+		logger.Error("API server failed to run", zap.Error(err), zap.Uint16("port", apiConfig.APIPort))
+	}
+	logger.Info("API server stopped", zap.Uint16("port", apiConfig.APIPort))
 }
 
 func listenForTermination(do func()) {
