@@ -7,13 +7,18 @@ import (
 	"time"
 )
 
+type ParseStringSupportTypes interface {
+	string |
+		int | int8 | int16 | int32 | int64 |
+		uint | uint8 | uint16 | uint32 | uint64 |
+		float64 |
+		bool | time.Duration | url.URL
+}
+
 // ParseString attempts to parse the input string `s` into a value of the specified type T.
 // If parsing the string `s` fails for a supported type, it returns the zero value of T
 // and the parsing error.
-// /nolint:forcetypeassert,wrapcheck
-func ParseString[
-	T string | int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | float64 | bool | time.Duration | url.URL,
-](rawValue string) (T, error) {
+func ParseString[T ParseStringSupportTypes](rawValue string) (T, error) {
 	var value T
 
 	switch any(value).(type) {
