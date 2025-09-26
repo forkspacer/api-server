@@ -9,6 +9,7 @@ import (
 	"github.com/forkspacer/api-server/pkg/api"
 	apiv1 "github.com/forkspacer/api-server/pkg/api/v1"
 	"github.com/forkspacer/api-server/pkg/config"
+	"github.com/forkspacer/api-server/pkg/services/forkspacer"
 	"go.uber.org/zap"
 )
 
@@ -38,10 +39,20 @@ func main() {
 		}
 	}
 
+	forkspacerService, err := forkspacer.NewForkspacerService(apiConfig.KubernetesConfig)
+	if err != nil {
+		logger.Fatal("", zap.Error(err))
+	}
+
 	logger.Info("Starting API server", zap.Uint16("port", apiConfig.APIPort))
-	if err := api.Run(ctx, apiConfig.APIPort, apiv1.NewRouter(logger)); err != nil {
+
+	if err := api.Run(ctx,
+		apiConfig.APIPort,
+		apiv1.NewRouter(logger, forkspacerService),
+	); err != nil {
 		logger.Error("API server failed to run", zap.Error(err), zap.Uint16("port", apiConfig.APIPort))
 	}
+
 	logger.Info("API server stopped", zap.Uint16("port", apiConfig.APIPort))
 }
 

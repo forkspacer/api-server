@@ -4,15 +4,17 @@ import (
 	"net/http"
 
 	"github.com/forkspacer/api-server/pkg/api/response"
+	"github.com/forkspacer/api-server/pkg/services/forkspacer"
 	"go.uber.org/zap"
 )
 
 type WorkspaceHandler struct {
-	logger *zap.Logger
+	logger            *zap.Logger
+	forkspacerService *forkspacer.ForkspacerService
 }
 
-func NewWorkspaceHandler(logger *zap.Logger) *WorkspaceHandler {
-	return &WorkspaceHandler{logger}
+func NewWorkspaceHandler(logger *zap.Logger, forkspacerService *forkspacer.ForkspacerService) *WorkspaceHandler {
+	return &WorkspaceHandler{logger, forkspacerService}
 }
 
 func (h WorkspaceHandler) Create(w http.ResponseWriter, r *http.Request) {
