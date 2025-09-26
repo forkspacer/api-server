@@ -39,7 +39,7 @@ func main() {
 		}
 	}
 
-	forkspacerService, err := forkspacer.NewForkspacerService()
+	forkspacerWorkspaceService, err := forkspacer.NewForkspacerWorkspaceService()
 	if err != nil {
 		logger.Fatal("", zap.Error(err))
 	}
@@ -48,7 +48,7 @@ func main() {
 
 	if err := api.Run(ctx,
 		apiConfig.APIPort,
-		apiv1.NewRouter(logger, forkspacerService),
+		apiv1.NewRouter(logger, forkspacerWorkspaceService),
 	); err != nil {
 		logger.Error("API server failed to run", zap.Error(err), zap.Uint16("port", apiConfig.APIPort))
 	}

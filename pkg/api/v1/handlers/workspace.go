@@ -9,26 +9,37 @@ import (
 )
 
 type WorkspaceHandler struct {
-	logger            *zap.Logger
-	forkspacerService *forkspacer.ForkspacerService
+	logger                     *zap.Logger
+	forkspacerWorkspaceService *forkspacer.ForkspacerWorkspaceService
 }
 
-func NewWorkspaceHandler(logger *zap.Logger, forkspacerService *forkspacer.ForkspacerService) *WorkspaceHandler {
-	return &WorkspaceHandler{logger, forkspacerService}
+func NewWorkspaceHandler(
+	logger *zap.Logger,
+	forkspacerWorkspaceService *forkspacer.ForkspacerWorkspaceService,
+) *WorkspaceHandler {
+	return &WorkspaceHandler{logger, forkspacerWorkspaceService}
 }
 
-func (h WorkspaceHandler) Create(w http.ResponseWriter, r *http.Request) {
-	if err := h.forkspacerService.Create(r.Context()); err != nil {
+func (h WorkspaceHandler) CreateKubeconfigSecretHandle(w http.ResponseWriter, r *http.Request) {
+	if secret, err := h.forkspacerWorkspaceService.CreateKubeconfigSecret(
+		r.Context(), "test", nil, []byte(``),
+	); err != nil {
 		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BadRequest, err.Error()))
 		return
+	} else {
+		response.JSONSuccess(w, 201, response.NewJSONSuccess(response.SuccessCodes.Created, secret.UID))
+		return
 	}
-	response.JSONCreated(w)
 }
 
-func (h WorkspaceHandler) Update(w http.ResponseWriter, r *http.Request) {
+func (h WorkspaceHandler) CreateHandle(w http.ResponseWriter, r *http.Request) {
 	response.JSONSuccess(w, 200, response.NewJSONSuccess(response.SuccessCodes.Ok, "Hello"))
 }
 
-func (h WorkspaceHandler) Delete(w http.ResponseWriter, r *http.Request) {
+func (h WorkspaceHandler) UpdateHandle(w http.ResponseWriter, r *http.Request) {
+	response.JSONSuccess(w, 200, response.NewJSONSuccess(response.SuccessCodes.Ok, "Hello"))
+}
+
+func (h WorkspaceHandler) DeleteHandle(w http.ResponseWriter, r *http.Request) {
 	response.JSONSuccess(w, 200, response.NewJSONSuccess(response.SuccessCodes.Ok, "Hello"))
 }
