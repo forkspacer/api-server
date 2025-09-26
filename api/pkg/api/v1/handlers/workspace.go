@@ -18,7 +18,11 @@ func NewWorkspaceHandler(logger *zap.Logger, forkspacerService *forkspacer.Forks
 }
 
 func (h WorkspaceHandler) Create(w http.ResponseWriter, r *http.Request) {
-	response.JSONSuccess(w, 200, response.NewJSONSuccess(response.SuccessCodes.Ok, "Hello"))
+	if err := h.forkspacerService.Create(r.Context()); err != nil {
+		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BadRequest, err.Error()))
+		return
+	}
+	response.JSONCreated(w)
 }
 
 func (h WorkspaceHandler) Update(w http.ResponseWriter, r *http.Request) {

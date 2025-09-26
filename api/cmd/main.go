@@ -39,7 +39,7 @@ func main() {
 		}
 	}
 
-	forkspacerService, err := forkspacer.NewForkspacerService(apiConfig.KubernetesConfig)
+	forkspacerService, err := forkspacer.NewForkspacerService()
 	if err != nil {
 		logger.Fatal("", zap.Error(err))
 	}
