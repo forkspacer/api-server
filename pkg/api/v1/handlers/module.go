@@ -6,6 +6,7 @@ import (
 	"github.com/forkspacer/api-server/pkg/api/response"
 	"github.com/forkspacer/api-server/pkg/api/validation"
 	"github.com/forkspacer/api-server/pkg/services/forkspacer"
+	"github.com/forkspacer/api-server/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -88,6 +89,127 @@ func (h ModuleHandler) CreateHandle(w http.ResponseWriter, r *http.Request) {
 	)
 }
 
-func (h ModuleHandler) UpdateHandle(w http.ResponseWriter, r *http.Request) {}
-func (h ModuleHandler) DeleteHandle(w http.ResponseWriter, r *http.Request) {}
-func (h ModuleHandler) ListHandle(w http.ResponseWriter, r *http.Request)   {}
+type UpdateModuleRequest struct {
+	Name       string  `json:"name" validate:"required,dns1123subdomain"`
+	Namespace  *string `json:"namespace,omitempty" validate:"omitempty,dns1123subdomain"`
+	Hibernated *bool   `json:"hibernated,omitempty"`
+}
+
+func (h ModuleHandler) UpdateHandle(w http.ResponseWriter, r *http.Request) {
+	var requestData = &UpdateModuleRequest{}
+	if err := validation.JSONBodyReadAndValidate(w, r, requestData); err != nil {
+		return
+	}
+
+	updateIn := forkspacer.ModuleUpdateIn{
+		Name:       requestData.Name,
+		Namespace:  requestData.Namespace,
+		Hibernated: requestData.Hibernated,
+	}
+
+	module, err := h.forkspacerModuleService.Update(r.Context(), updateIn)
+	if err != nil {
+		response.JSONBadRequest(w, err.Error())
+		return
+	}
+
+	response.JSONSuccess(w, 200,
+		response.NewJSONSuccess(
+			response.SuccessCodes.Ok,
+			ModuleResponse{
+				Name:      module.Name,
+				Namespace: module.Namespace,
+			},
+		),
+	)
+}
+
+type DeleteModuleRequest struct {
+	Name      string  `json:"name" validate:"required,dns1123subdomain"`
+	Namespace *string `json:"namespace,omitempty" validate:"omitempty,dns1123label"`
+}
+
+func (h ModuleHandler) DeleteHandle(w http.ResponseWriter, r *http.Request) {
+	var requestData = &DeleteModuleRequest{}
+	if err := validation.JSONBodyReadAndValidate(w, r, requestData); err != nil {
+		return
+	}
+
+	if err := h.forkspacerModuleService.Delete(r.Context(), requestData.Name, requestData.Namespace); err != nil {
+		response.JSONBadRequest(w, err.Error())
+		return
+	}
+
+	response.JSONDeleted(w)
+}
+
+type ListModulesRequest struct {
+	Limit         *int64  `json:"limit,omitempty" validate:"omitempty,gte=1,lte=250"`
+	ContinueToken *string `json:"continueToken,omitempty"`
+}
+
+type ModuleListItem struct {
+	Name       string `json:"name"`
+	Namespace  string `json:"namespace"`
+	Phase      string `json:"phase"`
+	Message    string `json:"message"`
+	Hibernated bool   `json:"hibernated"`
+}
+
+type ListModulesResponse struct {
+	ContinueToken string           `json:"continueToken"`
+	Modules       []ModuleListItem `json:"modules"`
+}
+
+func (h ModuleHandler) ListHandle(w http.ResponseWriter, r *http.Request) {
+	var requestData = &ListModulesRequest{}
+	if err := validation.JSONBodyReadAndValidate(w, r, requestData); err != nil {
+		return
+	}
+
+	if requestData.Limit == nil {
+		requestData.Limit = utils.ToPtr[int64](25)
+	}
+
+	moduleList, err := h.forkspacerModuleService.List(
+		r.Context(),
+		*requestData.Limit,
+		requestData.ContinueToken,
+	)
+	if err != nil {
+		response.JSONBadRequest(w, err.Error())
+		return
+	}
+
+	responseData := ListModulesResponse{
+		ContinueToken: moduleList.Continue,
+		Modules:       make([]ModuleListItem, len(moduleList.Items)),
+	}
+
+	for i, module := range moduleList.Items {
+		hibernated := false
+		if module.Spec.Hibernated != nil {
+			hibernated = *module.Spec.Hibernated
+		}
+
+		message := ""
+		if module.Status.Message != nil {
+			message = *module.Status.Message
+		}
+
+		responseData.Modules[i] = ModuleListItem{
+			Name:       module.Name,
+			Namespace:  module.Namespace,
+			Phase:      string(module.Status.Phase),
+			Hibernated: hibernated,
+			Message:    message,
+		}
+	}
+
+	response.JSONSuccess(w, 200,
+		response.NewJSONSuccess(
+			response.SuccessCodes.Ok,
+			responseData,
+		),
+	)
+}

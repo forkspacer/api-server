@@ -94,7 +94,7 @@ func JSONUnsopportedMediaType(w http.ResponseWriter, expectedMediaType string) {
 	JSONError(w, 415,
 		NewJSONError(
 			ErrCodes.UnsupportedMediaType,
-			"Unsupported Media Type (expected: %s)"+expectedMediaType,
+			fmt.Sprintf("Unsupported Media Type (expected: %s)", expectedMediaType),
 		),
 	)
 }

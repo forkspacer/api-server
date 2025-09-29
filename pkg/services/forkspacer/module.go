@@ -94,3 +94,68 @@ func (s ForkspacerModuleService) Create(ctx context.Context, moduleIn ModuleCrea
 
 	return module, s.client.Create(ctx, module)
 }
+
+type ModuleUpdateIn struct {
+	Name       string
+	Namespace  *string
+	Hibernated *bool
+}
+
+func (s ForkspacerModuleService) Update(
+	ctx context.Context,
+	updateIn ModuleUpdateIn,
+) (*batchv1.Module, error) {
+	if updateIn.Namespace == nil {
+		updateIn.Namespace = utils.ToPtr("default")
+	}
+
+	module := &batchv1.Module{}
+
+	if err := s.client.Get(ctx, client.ObjectKey{
+		Name:      updateIn.Name,
+		Namespace: *updateIn.Namespace,
+	}, module); err != nil {
+		return nil, err
+	}
+
+	// Update only the Hibernated field
+	if updateIn.Hibernated != nil {
+		module.Spec.Hibernated = updateIn.Hibernated
+	}
+
+	return module, s.client.Update(ctx, module)
+}
+
+func (s ForkspacerModuleService) Delete(ctx context.Context, name string, namespace *string) error {
+	if namespace == nil {
+		namespace = utils.ToPtr("default")
+	}
+
+	module := &batchv1.Module{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: *namespace,
+		},
+	}
+
+	return s.client.Delete(ctx, module)
+}
+
+func (s ForkspacerModuleService) List(
+	ctx context.Context,
+	limit int64,
+	continueToken *string,
+) (*batchv1.ModuleList, error) {
+	options := []client.ListOption{
+		client.Limit(limit),
+	}
+
+	if continueToken != nil {
+		options = append(options, client.Continue(*continueToken))
+	}
+
+	modules := &batchv1.ModuleList{}
+	err := s.client.List(ctx, modules, options...)
+
+	return modules, err
+}
