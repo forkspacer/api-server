@@ -18,6 +18,7 @@ func NewRouter(logger *zap.Logger, forkspacerWorkspaceService *forkspacer.Forksp
 		r.Post("/", workspaceHandler.CreateHandle)
 		r.Patch("/", workspaceHandler.UpdateHandle)
 		r.Delete("/", workspaceHandler.DeleteHandle)
+		r.Get("/list", workspaceHandler.ListHandle)
 
 		r.Route("/connection", func(r chi.Router) {
 			r.Route("/kubeconfig", func(r chi.Router) {

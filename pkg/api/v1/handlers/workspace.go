@@ -147,14 +147,223 @@ func (h WorkspaceHandler) ListKubeconfigSecretsHandle(w http.ResponseWriter, r *
 	}
 }
 
+type WorkspaceResourceReference struct {
+	Name      string `json:"name" validate:"required,dns1123subdomain"`
+	Namespace string `json:"namespace" validate:"required,dns1123subdomain"`
+}
+
+type WorkspaceConnection struct {
+	Type   string                      `json:"type" validate:"required,oneof=kubeconfig in-cluster"`
+	Secret *WorkspaceResourceReference `json:"secret,omitempty" validate:"required_if=Type kubeconfig"`
+}
+
+type WorkspaceAutoHibernation struct {
+	Enabled      bool    `json:"enabled"`
+	Schedule     string  `json:"schedule" validate:"required_if=Enabled true,omitempty,cron"`
+	WakeSchedule *string `json:"wakeSchedule,omitempty" validate:"omitempty,cron"`
+}
+
+type CreateWorkspaceRequest struct {
+	Name            string                      `json:"name" validate:"required,dns1123subdomain"`
+	Namespace       *string                     `json:"namespace,omitempty" validate:"omitempty,dns1123subdomain"`
+	From            *WorkspaceResourceReference `json:"from,omitempty"`
+	Hibernated      bool                        `json:"hibernated"`
+	Connection      *WorkspaceConnection        `json:"connection" validate:"required"`
+	AutoHibernation *WorkspaceAutoHibernation   `json:"autoHibernation,omitempty"`
+}
+
+type WorkspaceResponse struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
 func (h WorkspaceHandler) CreateHandle(w http.ResponseWriter, r *http.Request) {
-	response.JSONSuccess(w, 200, response.NewJSONSuccess(response.SuccessCodes.Ok, "Hello"))
+	var requestData = &CreateWorkspaceRequest{}
+	if err := validation.JSONBodyReadAndValidate(w, r, requestData); err != nil {
+		return
+	}
+
+	workspaceIn := forkspacer.WorkspaceCreateIn{
+		Name:       requestData.Name,
+		Namespace:  requestData.Namespace,
+		Hibernated: requestData.Hibernated,
+	}
+
+	if requestData.From != nil {
+		workspaceIn.From = &forkspacer.ResourceReference{
+			Name:      requestData.From.Name,
+			Namespace: requestData.From.Namespace,
+		}
+	}
+
+	if requestData.Connection != nil {
+		workspaceIn.Connection = &forkspacer.WorkspaceCreateConnectionIn{
+			Type: requestData.Connection.Type,
+		}
+		if requestData.Connection.Secret != nil {
+			workspaceIn.Connection.Secret = &forkspacer.ResourceReference{
+				Name:      requestData.Connection.Secret.Name,
+				Namespace: requestData.Connection.Secret.Namespace,
+			}
+		}
+	}
+
+	if requestData.AutoHibernation != nil {
+		workspaceIn.AutoHibernation = &forkspacer.WorkspaceAutoHibernationIn{
+			Enabled:      requestData.AutoHibernation.Enabled,
+			Schedule:     requestData.AutoHibernation.Schedule,
+			WakeSchedule: requestData.AutoHibernation.WakeSchedule,
+		}
+	}
+
+	workspace, err := h.forkspacerWorkspaceService.Create(r.Context(), workspaceIn)
+	if err != nil {
+		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BadRequest, err.Error()))
+		return
+	}
+
+	response.JSONSuccess(w, 201,
+		response.NewJSONSuccess(
+			response.SuccessCodes.Created,
+			WorkspaceResponse{
+				Name:      workspace.Name,
+				Namespace: workspace.Namespace,
+			},
+		),
+	)
+}
+
+type UpdateWorkspaceRequest struct {
+	Name            string                    `json:"name" validate:"required,dns1123subdomain"`
+	Namespace       *string                   `json:"namespace,omitempty" validate:"omitempty,dns1123subdomain"`
+	Hibernated      *bool                     `json:"hibernated,omitempty"`
+	AutoHibernation *WorkspaceAutoHibernation `json:"autoHibernation,omitempty"`
 }
 
 func (h WorkspaceHandler) UpdateHandle(w http.ResponseWriter, r *http.Request) {
-	response.JSONSuccess(w, 200, response.NewJSONSuccess(response.SuccessCodes.Ok, "Hello"))
+	var requestData = &UpdateWorkspaceRequest{}
+	if err := validation.JSONBodyReadAndValidate(w, r, requestData); err != nil {
+		return
+	}
+
+	updateIn := forkspacer.WorkspaceUpdateIn{
+		Name:       requestData.Name,
+		Namespace:  requestData.Namespace,
+		Hibernated: requestData.Hibernated,
+	}
+
+	if requestData.AutoHibernation != nil {
+		updateIn.AutoHibernation = &forkspacer.WorkspaceAutoHibernationIn{
+			Enabled:      requestData.AutoHibernation.Enabled,
+			Schedule:     requestData.AutoHibernation.Schedule,
+			WakeSchedule: requestData.AutoHibernation.WakeSchedule,
+		}
+	}
+
+	workspace, err := h.forkspacerWorkspaceService.Update(r.Context(), updateIn)
+	if err != nil {
+		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BadRequest, err.Error()))
+		return
+	}
+
+	response.JSONSuccess(w, 200,
+		response.NewJSONSuccess(
+			response.SuccessCodes.Ok,
+			WorkspaceResponse{
+				Name:      workspace.Name,
+				Namespace: workspace.Namespace,
+			},
+		),
+	)
+}
+
+type DeleteWorkspaceRequest struct {
+	Name      string  `json:"name" validate:"required,dns1123subdomain"`
+	Namespace *string `json:"namespace,omitempty" validate:"omitempty,dns1123subdomain"`
 }
 
 func (h WorkspaceHandler) DeleteHandle(w http.ResponseWriter, r *http.Request) {
-	response.JSONSuccess(w, 200, response.NewJSONSuccess(response.SuccessCodes.Ok, "Hello"))
+	var requestData = &DeleteWorkspaceRequest{}
+	if err := validation.JSONBodyReadAndValidate(w, r, requestData); err != nil {
+		return
+	}
+
+	if err := h.forkspacerWorkspaceService.Delete(r.Context(), requestData.Name, requestData.Namespace); err != nil {
+		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BadRequest, err.Error()))
+		return
+	}
+
+	response.JSONDeleted(w)
+}
+
+type ListWorkspacesRequest struct {
+	Limit         *int64  `json:"limit,omitempty" validate:"omitempty,gte=1,lte=250"`
+	ContinueToken *string `json:"continueToken,omitempty"`
+}
+
+type WorkspaceListItem struct {
+	Name       string `json:"name"`
+	Namespace  string `json:"namespace"`
+	Phase      string `json:"phase"`
+	Message    string `json:"message"`
+	Type       string `json:"type"`
+	Hibernated bool   `json:"hibernated"`
+}
+
+type ListWorkspacesResponse struct {
+	ContinueToken string              `json:"continueToken"`
+	Workspaces    []WorkspaceListItem `json:"workspaces"`
+}
+
+func (h WorkspaceHandler) ListHandle(w http.ResponseWriter, r *http.Request) {
+	var requestData = &ListWorkspacesRequest{}
+	if err := validation.JSONBodyReadAndValidate(w, r, requestData); err != nil {
+		return
+	}
+
+	if requestData.Limit == nil {
+		requestData.Limit = utils.ToPtr[int64](25)
+	}
+
+	workspaceList, err := h.forkspacerWorkspaceService.List(
+		r.Context(),
+		*requestData.Limit,
+		requestData.ContinueToken,
+	)
+	if err != nil {
+		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BadRequest, err.Error()))
+		return
+	}
+
+	responseData := ListWorkspacesResponse{
+		ContinueToken: workspaceList.Continue,
+		Workspaces:    make([]WorkspaceListItem, len(workspaceList.Items)),
+	}
+
+	for i, workspace := range workspaceList.Items {
+		hibernated := false
+		if workspace.Spec.Hibernated != nil {
+			hibernated = *workspace.Spec.Hibernated
+		}
+
+		if workspace.Status.Message == nil {
+			workspace.Status.Message = utils.ToPtr("")
+		}
+
+		responseData.Workspaces[i] = WorkspaceListItem{
+			Name:       workspace.Name,
+			Namespace:  workspace.Namespace,
+			Phase:      string(workspace.Status.Phase),
+			Type:       string(workspace.Spec.Type),
+			Hibernated: hibernated,
+			Message:    *workspace.Status.Message,
+		}
+	}
+
+	response.JSONSuccess(w, 200,
+		response.NewJSONSuccess(
+			response.SuccessCodes.Ok,
+			responseData,
+		),
+	)
 }
