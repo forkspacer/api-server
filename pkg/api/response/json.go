@@ -58,6 +58,10 @@ func JSONError(w http.ResponseWriter, statusCode int, errorResponse *JSONErrorRe
 	JSON(w, statusCode, Response{Error: errorResponse})
 }
 
+func JSONBadRequest(w http.ResponseWriter, data any) {
+	JSONError(w, 400, NewJSONError(ErrCodes.BadRequest, data))
+}
+
 func JSONMalformedJSONBody(w http.ResponseWriter) {
 	JSONError(w, 400, NewJSONError(ErrCodes.MalformedJSONBody, nil))
 }

@@ -45,14 +45,14 @@ func (h WorkspaceHandler) CreateKubeconfigSecretHandle(w http.ResponseWriter, r 
 
 	file, _, err := r.FormFile("kubeconfig")
 	if err != nil {
-		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BodyValidation, "Kubeconfig file is required"))
+		response.JSONBadRequest(w, "Kubeconfig file is required")
 		return
 	}
 	defer func() { _ = file.Close() }()
 
 	requestData.Kubeconfig, err = io.ReadAll(file)
 	if err != nil {
-		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BodyValidation, "Invalid kubeconfig file content"))
+		response.JSONBadRequest(w, "Invalid kubeconfig file content: " + err.Error())
 		return
 	}
 
@@ -63,7 +63,7 @@ func (h WorkspaceHandler) CreateKubeconfigSecretHandle(w http.ResponseWriter, r 
 	if secret, err := h.forkspacerWorkspaceService.CreateKubeconfigSecret(
 		r.Context(), requestData.Name, nil, requestData.Kubeconfig,
 	); err != nil {
-		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BadRequest, err.Error()))
+		response.JSONBadRequest(w, err.Error())
 		return
 	} else {
 		response.JSONSuccess(w, 201,
@@ -92,7 +92,7 @@ func (h WorkspaceHandler) DeleteKubeconfigSecretHandle(w http.ResponseWriter, r 
 	if err := h.forkspacerWorkspaceService.DeleteKubeconfigSecret(
 		r.Context(), requestData.Name, nil,
 	); err != nil {
-		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BadRequest, err.Error()))
+		response.JSONBadRequest(w, err.Error())
 		return
 	} else {
 		response.JSONDeleted(w)
@@ -123,7 +123,7 @@ func (h WorkspaceHandler) ListKubeconfigSecretsHandle(w http.ResponseWriter, r *
 	if secrets, err := h.forkspacerWorkspaceService.ListKubeconfigSecrets(
 		r.Context(), *requestData.Limit, requestData.ContinueToken,
 	); err != nil {
-		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BadRequest, err.Error()))
+		response.JSONBadRequest(w, err.Error())
 		return
 	} else {
 		responseData := ListKubeconfigSecretsResponse{
@@ -218,7 +218,7 @@ func (h WorkspaceHandler) CreateHandle(w http.ResponseWriter, r *http.Request) {
 
 	workspace, err := h.forkspacerWorkspaceService.Create(r.Context(), workspaceIn)
 	if err != nil {
-		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BadRequest, err.Error()))
+		response.JSONBadRequest(w, err.Error())
 		return
 	}
 
@@ -262,7 +262,7 @@ func (h WorkspaceHandler) UpdateHandle(w http.ResponseWriter, r *http.Request) {
 
 	workspace, err := h.forkspacerWorkspaceService.Update(r.Context(), updateIn)
 	if err != nil {
-		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BadRequest, err.Error()))
+		response.JSONBadRequest(w, err.Error())
 		return
 	}
 
@@ -289,7 +289,7 @@ func (h WorkspaceHandler) DeleteHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.forkspacerWorkspaceService.Delete(r.Context(), requestData.Name, requestData.Namespace); err != nil {
-		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BadRequest, err.Error()))
+		response.JSONBadRequest(w, err.Error())
 		return
 	}
 
@@ -331,7 +331,7 @@ func (h WorkspaceHandler) ListHandle(w http.ResponseWriter, r *http.Request) {
 		requestData.ContinueToken,
 	)
 	if err != nil {
-		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BadRequest, err.Error()))
+		response.JSONBadRequest(w, err.Error())
 		return
 	}
 
