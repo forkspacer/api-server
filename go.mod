@@ -3,9 +3,11 @@ module github.com/forkspacer/api-server
 go 1.25.0
 
 require (
-	github.com/forkspacer/forkspacer v0.0.0-20250925140414-36fb375cbb63
+	github.com/forkspacer/forkspacer v0.1.1
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-chi/cors v1.2.2
+	github.com/go-playground/locales v0.14.1
+	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.27.0
 	github.com/hashicorp/go-multierror v1.1.1
 	go.uber.org/zap v1.27.0
@@ -39,8 +41,6 @@ require (
 	github.com/go-openapi/swag/stringutils v0.24.0 // indirect
 	github.com/go-openapi/swag/typeutils v0.24.0 // indirect
 	github.com/go-openapi/swag/yamlutils v0.24.0 // indirect
-	github.com/go-playground/locales v0.14.1 // indirect
-	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect

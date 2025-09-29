@@ -54,7 +54,7 @@ func (s ForkspacerWorkspaceService) CreateKubeconfigSecret(
 			Name:      name,
 			Namespace: *namespace,
 			Labels: map[string]string{
-				"forkspacer": "workspace-kubeconfig-secret",
+				BaseLabel: Labels.WorkspaceKubeconfigSecret,
 			},
 		},
 		Type: corev1.SecretTypeOpaque,

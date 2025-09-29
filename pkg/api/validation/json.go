@@ -26,7 +26,7 @@ func JSONBodyValidate(w http.ResponseWriter, r *http.Request, structData any) er
 	if err := Validate.StructCtx(r.Context(), structData); err != nil {
 		switch errs := err.(type) {
 		case validator.ValidationErrors:
-			response.JSONBodyValidationError(w, validationErrors2Map(errs))
+			response.JSONBodyValidationError(w, errs.Translate(GetTranslation("en")))
 			return fmt.Errorf("request body validation failed: %w", errs)
 		default:
 			response.JSONInternal(w)
