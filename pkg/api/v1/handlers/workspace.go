@@ -52,7 +52,7 @@ func (h WorkspaceHandler) CreateKubeconfigSecretHandle(w http.ResponseWriter, r 
 
 	requestData.Kubeconfig, err = io.ReadAll(file)
 	if err != nil {
-		response.JSONBadRequest(w, "Invalid kubeconfig file content: " + err.Error())
+		response.JSONBadRequest(w, "Invalid kubeconfig file content: "+err.Error())
 		return
 	}
 
@@ -149,7 +149,7 @@ func (h WorkspaceHandler) ListKubeconfigSecretsHandle(w http.ResponseWriter, r *
 
 type WorkspaceResourceReference struct {
 	Name      string `json:"name" validate:"required,dns1123subdomain"`
-	Namespace string `json:"namespace" validate:"required,dns1123subdomain"`
+	Namespace string `json:"namespace" validate:"required,dns1123label"`
 }
 
 type WorkspaceConnection struct {
@@ -279,7 +279,7 @@ func (h WorkspaceHandler) UpdateHandle(w http.ResponseWriter, r *http.Request) {
 
 type DeleteWorkspaceRequest struct {
 	Name      string  `json:"name" validate:"required,dns1123subdomain"`
-	Namespace *string `json:"namespace,omitempty" validate:"omitempty,dns1123subdomain"`
+	Namespace *string `json:"namespace,omitempty" validate:"omitempty,dns1123label"`
 }
 
 func (h WorkspaceHandler) DeleteHandle(w http.ResponseWriter, r *http.Request) {

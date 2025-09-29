@@ -6,11 +6,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 )
 
 func Run(ctx context.Context, port uint16, routers ...http.Handler) error {
 	baseRouter := chi.NewRouter()
+
+	baseRouter.Use(middleware.Recoverer)
 	for _, router := range routers {
 		baseRouter.Mount("/api", router)
 	}

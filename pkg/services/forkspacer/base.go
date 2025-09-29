@@ -9,3 +9,8 @@ var Labels = struct {
 }{
 	WorkspaceKubeconfigSecret: "workspace-kubeconfig-secret",
 }
+
+type ResourceReference struct {
+	Name      string
+	Namespace string
+}

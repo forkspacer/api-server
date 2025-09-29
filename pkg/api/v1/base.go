@@ -10,8 +10,13 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewRouter(logger *zap.Logger, forkspacerWorkspaceService *forkspacer.ForkspacerWorkspaceService) http.Handler {
+func NewRouter(
+	logger *zap.Logger,
+	forkspacerWorkspaceService *forkspacer.ForkspacerWorkspaceService,
+	forkspacerModuleService *forkspacer.ForkspacerModuleService,
+) http.Handler {
 	workspaceHandler := handlers.NewWorkspaceHandler(logger, forkspacerWorkspaceService)
+	moduleHandler := handlers.NewModuleHandler(logger, forkspacerModuleService)
 
 	apiRouter := chi.NewRouter()
 	apiRouter.Route("/workspace", func(r chi.Router) {
@@ -27,6 +32,13 @@ func NewRouter(logger *zap.Logger, forkspacerWorkspaceService *forkspacer.Forksp
 				r.Get("/list", workspaceHandler.ListKubeconfigSecretsHandle)
 			})
 		})
+	})
+
+	apiRouter.Route("/module", func(r chi.Router) {
+		r.Post("/", moduleHandler.CreateHandle)
+		r.Patch("/", moduleHandler.UpdateHandle)
+		r.Delete("/", moduleHandler.DeleteHandle)
+		r.Get("/list", moduleHandler.ListHandle)
 	})
 
 	baseRouter := chi.NewRouter()

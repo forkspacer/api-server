@@ -41,14 +41,19 @@ func main() {
 
 	forkspacerWorkspaceService, err := forkspacer.NewForkspacerWorkspaceService()
 	if err != nil {
-		logger.Fatal("", zap.Error(err))
+		logger.Fatal("Failed to create Forkspacer workspace service", zap.Error(err))
+	}
+
+	forkspacerModuleService, err := forkspacer.NewForkspacerModuleService()
+	if err != nil {
+		logger.Fatal("Failed to create Forkspacer module service", zap.Error(err))
 	}
 
 	logger.Info("Starting API server", zap.Uint16("port", apiConfig.APIPort))
 
 	if err := api.Run(ctx,
 		apiConfig.APIPort,
-		apiv1.NewRouter(logger, forkspacerWorkspaceService),
+		apiv1.NewRouter(logger, forkspacerWorkspaceService, forkspacerModuleService),
 	); err != nil {
 		logger.Error("API server failed to run", zap.Error(err), zap.Uint16("port", apiConfig.APIPort))
 	}

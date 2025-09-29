@@ -107,11 +107,6 @@ func (s ForkspacerWorkspaceService) ListKubeconfigSecrets(
 	return secrets, err
 }
 
-type ResourceReference struct {
-	Name      string
-	Namespace string
-}
-
 type WorkspaceCreateConnectionIn struct {
 	Type   string
 	Secret *ResourceReference
