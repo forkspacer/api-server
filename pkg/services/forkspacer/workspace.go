@@ -65,3 +65,24 @@ func (s ForkspacerWorkspaceService) CreateKubeconfigSecret(
 
 	return secret, s.client.Create(ctx, secret)
 }
+
+func (s ForkspacerWorkspaceService) DeleteKubeconfigSecret(
+	ctx context.Context,
+	name string, namespace *string,
+) error {
+	if namespace == nil {
+		namespace = utils.ToPtr("default")
+	}
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: *namespace,
+			Labels: map[string]string{
+				BaseLabel: Labels.WorkspaceKubeconfigSecret,
+			},
+		},
+	}
+
+	return s.client.Delete(ctx, secret)
+}

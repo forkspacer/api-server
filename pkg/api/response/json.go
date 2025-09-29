@@ -50,6 +50,10 @@ func JSONCreated(w http.ResponseWriter) {
 	JSONSuccess(w, 201, NewJSONSuccess(SuccessCodes.Created, nil))
 }
 
+func JSONDeleted(w http.ResponseWriter) {
+	JSON(w, 204, nil)
+}
+
 func JSONError(w http.ResponseWriter, statusCode int, errorResponse *JSONErrorResponse) {
 	JSON(w, statusCode, Response{Error: errorResponse})
 }

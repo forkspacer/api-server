@@ -61,7 +61,36 @@ func (h WorkspaceHandler) CreateKubeconfigSecretHandle(w http.ResponseWriter, r 
 		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BadRequest, err.Error()))
 		return
 	} else {
-		response.JSONSuccess(w, 201, response.NewJSONSuccess(response.SuccessCodes.Created, secret.UID))
+		response.JSONSuccess(w, 201,
+			response.NewJSONSuccess(
+				response.SuccessCodes.Created,
+				map[string]string{
+					"namespace": secret.Namespace,
+					"name":      secret.Name,
+				},
+			),
+		)
+		return
+	}
+}
+
+type DeleteKubeconfigSecretRequest struct {
+	Name string `json:"name" validate:"required,dns1123subdomain"`
+}
+
+func (h WorkspaceHandler) DeleteKubeconfigSecretHandle(w http.ResponseWriter, r *http.Request) {
+	var requestData = &DeleteKubeconfigSecretRequest{}
+	if err := validation.JSONBodyReadAndValidate(w, r, requestData); err != nil {
+		return
+	}
+
+	if err := h.forkspacerWorkspaceService.DeleteKubeconfigSecret(
+		r.Context(), requestData.Name, nil,
+	); err != nil {
+		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BadRequest, err.Error()))
+		return
+	} else {
+		response.JSONDeleted(w)
 		return
 	}
 }
