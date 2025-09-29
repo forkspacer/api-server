@@ -2,7 +2,10 @@ package response
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+
+	"github.com/forkspacer/api-server/pkg/utils"
 )
 
 type JSONErrorResponse struct {
@@ -59,16 +62,33 @@ func JSONBodyValidationError(w http.ResponseWriter, errs map[string]string) {
 	JSONError(w, 400, NewJSONError(ErrCodes.BodyValidation, errs))
 }
 
-func JSONQueryValidationError(w http.ResponseWriter, errs map[string]string) {
-	JSONError(w, 400, NewJSONError(ErrCodes.QueryValidation, errs))
-}
-
 func JSONNotFound(w http.ResponseWriter) {
 	JSONError(w, 404, NewJSONError(ErrCodes.NotFound, "Not Found"))
 }
 
+func JSONFormDataTooLarge(w http.ResponseWriter, limit *int64) {
+	if limit == nil {
+		JSONError(w, 413,
+			NewJSONError(ErrCodes.FormDataTooLarge, "Form data too large"),
+		)
+		return
+	}
+
+	JSONError(w, 413,
+		NewJSONError(
+			ErrCodes.FormDataTooLarge,
+			fmt.Sprintf("Form data too large (limit: %s bytes)", utils.FormatBytes(*limit)),
+		),
+	)
+}
+
 func JSONUnsopportedMediaType(w http.ResponseWriter, expectedMediaType string) {
-	JSONError(w, 415, NewJSONError(ErrCodes.UnsupportedMediaType, "Unsupported Media Type: "+expectedMediaType))
+	JSONError(w, 415,
+		NewJSONError(
+			ErrCodes.UnsupportedMediaType,
+			"Unsupported Media Type (expected: %s)"+expectedMediaType,
+		),
+	)
 }
 
 func JSONInternal(w http.ResponseWriter) {

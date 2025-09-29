@@ -1,7 +1,6 @@
 package validation
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -11,16 +10,11 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-func JSONBodyReadAndValidate(w http.ResponseWriter, r *http.Request, structData any) error {
+func FormDataBodyValidate(w http.ResponseWriter, r *http.Request, structData any) error {
 	contentType, _, _ := strings.Cut(r.Header.Get("Content-Type"), ";")
-	if contentType != "application/json" {
-		response.JSONUnsopportedMediaType(w, "application/json")
+	if contentType != "multipart/form-data" {
+		response.JSONUnsopportedMediaType(w, "multipart/form-data")
 		return fmt.Errorf("unsupported media type")
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(structData); err != nil {
-		response.JSONMalformedJSONBody(w)
-		return fmt.Errorf("failed to decode request body: %w", err)
 	}
 
 	if err := Validate.StructCtx(r.Context(), structData); err != nil {

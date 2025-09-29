@@ -199,14 +199,14 @@ func ValidateDNS1035Label(fl validator.FieldLevel) bool {
 // ValidateKubeconfig validates that a string contains a valid kubeconfig YAML
 // with required clusters, contexts, and users sections.
 func ValidateKubeconfig(fl validator.FieldLevel) bool {
-	kubeconfigContent := fl.Field().String()
+	kubeconfigContent := fl.Field().Bytes()
 
-	if kubeconfigContent == "" {
+	if kubeconfigContent == nil {
 		return false
 	}
 
 	// Try to load the kubeconfig from the string content
-	config, err := clientcmd.Load([]byte(kubeconfigContent))
+	config, err := clientcmd.Load(kubeconfigContent)
 	if err != nil {
 		return false
 	}

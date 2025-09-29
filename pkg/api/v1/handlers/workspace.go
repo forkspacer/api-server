@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/forkspacer/api-server/pkg/api/response"
 	"github.com/forkspacer/api-server/pkg/api/validation"
 	"github.com/forkspacer/api-server/pkg/services/forkspacer"
+	"github.com/forkspacer/api-server/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -23,17 +25,38 @@ func NewWorkspaceHandler(
 
 type CreateKubeconfigSecretRequest struct {
 	Name       string `json:"name" validate:"required,dns1123subdomain"`
-	Kubeconfig string `json:"kubeconfig" validate:"required,kubeconfig"`
+	Kubeconfig []byte `json:"kubeconfig" validate:"required,kubeconfig"`
 }
 
 func (h WorkspaceHandler) CreateKubeconfigSecretHandle(w http.ResponseWriter, r *http.Request) {
 	var requestData = &CreateKubeconfigSecretRequest{}
-	if validation.JSONBodyValidate(w, r, requestData) != nil {
+
+	// upload of 10 MB.
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		response.JSONFormDataTooLarge(w, utils.ToPtr[int64](10<<20))
+		return
+	}
+	requestData.Name = r.PostFormValue("name")
+
+	file, _, err := r.FormFile("kubeconfig")
+	if err != nil {
+		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BodyValidation, "Kubeconfig file is required"))
+		return
+	}
+	defer func() { _ = file.Close() }()
+
+	requestData.Kubeconfig, err = io.ReadAll(file)
+	if err != nil {
+		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BodyValidation, "Invalid kubeconfig file content"))
+		return
+	}
+
+	if err := validation.FormDataBodyValidate(w, r, requestData); err != nil {
 		return
 	}
 
 	if secret, err := h.forkspacerWorkspaceService.CreateKubeconfigSecret(
-		r.Context(), requestData.Name, nil, []byte(requestData.Kubeconfig),
+		r.Context(), requestData.Name, nil, requestData.Kubeconfig,
 	); err != nil {
 		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BadRequest, err.Error()))
 		return
