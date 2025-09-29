@@ -86,3 +86,22 @@ func (s ForkspacerWorkspaceService) DeleteKubeconfigSecret(
 
 	return s.client.Delete(ctx, secret)
 }
+
+func (s ForkspacerWorkspaceService) ListKubeconfigSecrets(
+	ctx context.Context,
+	limit int64, continueToken *string,
+) (*corev1.SecretList, error) {
+	options := []client.ListOption{
+		client.MatchingLabels{BaseLabel: Labels.WorkspaceKubeconfigSecret},
+		client.Limit(limit),
+	}
+
+	if continueToken != nil {
+		options = append(options, client.Continue(*continueToken))
+	}
+
+	secrets := &corev1.SecretList{}
+	err := s.client.List(ctx, secrets, options...)
+
+	return secrets, err
+}

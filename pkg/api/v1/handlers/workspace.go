@@ -28,6 +28,11 @@ type CreateKubeconfigSecretRequest struct {
 	Kubeconfig []byte `json:"kubeconfig" validate:"required,kubeconfig"`
 }
 
+type KubeconfigSecretResponse struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
 func (h WorkspaceHandler) CreateKubeconfigSecretHandle(w http.ResponseWriter, r *http.Request) {
 	var requestData = &CreateKubeconfigSecretRequest{}
 
@@ -64,9 +69,9 @@ func (h WorkspaceHandler) CreateKubeconfigSecretHandle(w http.ResponseWriter, r 
 		response.JSONSuccess(w, 201,
 			response.NewJSONSuccess(
 				response.SuccessCodes.Created,
-				map[string]string{
-					"namespace": secret.Namespace,
-					"name":      secret.Name,
+				KubeconfigSecretResponse{
+					Namespace: secret.Namespace,
+					Name:      secret.Name,
 				},
 			),
 		)
@@ -91,6 +96,53 @@ func (h WorkspaceHandler) DeleteKubeconfigSecretHandle(w http.ResponseWriter, r 
 		return
 	} else {
 		response.JSONDeleted(w)
+		return
+	}
+}
+
+type ListKubeconfigSecretsRequest struct {
+	Limit         *int64  `json:"limit" validate:"omitempty,gte=1,lte=250"`
+	ContinueToken *string `json:"continueToken"`
+}
+
+type ListKubeconfigSecretsResponse struct {
+	ContinueToken string                     `json:"continueToken"`
+	Secrets       []KubeconfigSecretResponse `json:"secrets"`
+}
+
+func (h WorkspaceHandler) ListKubeconfigSecretsHandle(w http.ResponseWriter, r *http.Request) {
+	var requestData = &ListKubeconfigSecretsRequest{}
+	if err := validation.JSONBodyReadAndValidate(w, r, requestData); err != nil {
+		return
+	}
+
+	if requestData.Limit == nil {
+		requestData.Limit = utils.ToPtr[int64](25)
+	}
+
+	if secrets, err := h.forkspacerWorkspaceService.ListKubeconfigSecrets(
+		r.Context(), *requestData.Limit, requestData.ContinueToken,
+	); err != nil {
+		response.JSONError(w, 400, response.NewJSONError(response.ErrCodes.BadRequest, err.Error()))
+		return
+	} else {
+		responseData := ListKubeconfigSecretsResponse{
+			ContinueToken: secrets.Continue,
+			Secrets:       make([]KubeconfigSecretResponse, len(secrets.Items)),
+		}
+		for i, secret := range secrets.Items {
+			responseData.Secrets[i] = KubeconfigSecretResponse{
+				Namespace: secret.Namespace,
+				Name:      secret.Name,
+			}
+		}
+
+		response.JSONSuccess(w, 200,
+			response.NewJSONSuccess(
+				response.SuccessCodes.Ok,
+				responseData,
+			),
+		)
 		return
 	}
 }
