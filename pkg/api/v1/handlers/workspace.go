@@ -165,7 +165,7 @@ type WorkspaceAutoHibernation struct {
 
 type CreateWorkspaceRequest struct {
 	Name            string                      `json:"name" validate:"required,dns1123subdomain"`
-	Namespace       *string                     `json:"namespace,omitempty" validate:"omitempty,dns1123subdomain"`
+	Namespace       *string                     `json:"namespace,omitempty" validate:"omitempty,dns1123label"`
 	From            *WorkspaceResourceReference `json:"from,omitempty"`
 	Hibernated      bool                        `json:"hibernated"`
 	Connection      *WorkspaceConnection        `json:"connection" validate:"required"`
@@ -235,7 +235,7 @@ func (h WorkspaceHandler) CreateHandle(w http.ResponseWriter, r *http.Request) {
 
 type UpdateWorkspaceRequest struct {
 	Name            string                    `json:"name" validate:"required,dns1123subdomain"`
-	Namespace       *string                   `json:"namespace,omitempty" validate:"omitempty,dns1123subdomain"`
+	Namespace       *string                   `json:"namespace,omitempty" validate:"omitempty,dns1123label"`
 	Hibernated      *bool                     `json:"hibernated,omitempty"`
 	AutoHibernation *WorkspaceAutoHibernation `json:"autoHibernation,omitempty"`
 }

@@ -1,0 +1,766 @@
+openapi: 3.1.0
+info:
+  title: Forkspacer API
+  version: 1.0.0
+  description: API for managing workspaces and modules in Forkspacer
+servers:
+  - url: /api/v1
+    description: API v1
+paths:
+  /workspace/:
+    post:
+      summary: Create a new workspace
+      operationId: createWorkspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorkspaceRequest'
+      responses:
+        '201':
+          description: Workspace created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      success:
+                        allOf:
+                          - $ref: '#/components/schemas/JSONSuccessResponse'
+                          - type: object
+                            properties:
+                              code:
+                                type: string
+                                enum: [created]
+                              data:
+                                $ref: '#/components/schemas/WorkspaceResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+    patch:
+      summary: Update an existing workspace
+      operationId: updateWorkspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWorkspaceRequest'
+      responses:
+        '200':
+          description: Workspace updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      success:
+                        allOf:
+                          - $ref: '#/components/schemas/JSONSuccessResponse'
+                          - type: object
+                            properties:
+                              code:
+                                type: string
+                                enum: [ok]
+                              data:
+                                $ref: '#/components/schemas/WorkspaceResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+    delete:
+      summary: Delete a workspace
+      operationId: deleteWorkspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteWorkspaceRequest'
+      responses:
+        '204':
+          description: Workspace deleted successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+  /workspace/list:
+    get:
+      summary: List workspaces
+      operationId: listWorkspaces
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListWorkspacesRequest'
+      responses:
+        '200':
+          description: List of workspaces
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      success:
+                        allOf:
+                          - $ref: '#/components/schemas/JSONSuccessResponse'
+                          - type: object
+                            properties:
+                              code:
+                                type: string
+                                enum: [ok]
+                              data:
+                                $ref: '#/components/schemas/ListWorkspacesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+  /workspace/connection/kubeconfig/:
+    post:
+      summary: Create a kubeconfig secret
+      operationId: createKubeconfigSecret
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - kubeconfig
+              properties:
+                name:
+                  type: string
+                  description: DNS 1123 subdomain name
+                  pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+                  maxLength: 253
+                kubeconfig:
+                  type: string
+                  format: binary
+                  description: Kubeconfig file (max 10 MB)
+      responses:
+        '201':
+          description: Kubeconfig secret created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      success:
+                        allOf:
+                          - $ref: '#/components/schemas/JSONSuccessResponse'
+                          - type: object
+                            properties:
+                              code:
+                                type: string
+                                enum: [created]
+                              data:
+                                $ref: '#/components/schemas/KubeconfigSecretResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '413':
+          $ref: '#/components/responses/FormDataTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+    delete:
+      summary: Delete a kubeconfig secret
+      operationId: deleteKubeconfigSecret
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteKubeconfigSecretRequest'
+      responses:
+        '204':
+          description: Kubeconfig secret deleted successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+  /workspace/connection/kubeconfig/list:
+    get:
+      summary: List kubeconfig secrets
+      operationId: listKubeconfigSecrets
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListKubeconfigSecretsRequest'
+      responses:
+        '200':
+          description: List of kubeconfig secrets
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      success:
+                        allOf:
+                          - $ref: '#/components/schemas/JSONSuccessResponse'
+                          - type: object
+                            properties:
+                              code:
+                                type: string
+                                enum: [ok]
+                              data:
+                                $ref: '#/components/schemas/ListKubeconfigSecretsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+  /module/:
+    post:
+      summary: Create a new module
+      operationId: createModule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateModuleRequest'
+      responses:
+        '201':
+          description: Module created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      success:
+                        allOf:
+                          - $ref: '#/components/schemas/JSONSuccessResponse'
+                          - type: object
+                            properties:
+                              code:
+                                type: string
+                                enum: [created]
+                              data:
+                                $ref: '#/components/schemas/ModuleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+    patch:
+      summary: Update an existing module
+      operationId: updateModule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateModuleRequest'
+      responses:
+        '200':
+          description: Module updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      success:
+                        allOf:
+                          - $ref: '#/components/schemas/JSONSuccessResponse'
+                          - type: object
+                            properties:
+                              code:
+                                type: string
+                                enum: [ok]
+                              data:
+                                $ref: '#/components/schemas/ModuleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+    delete:
+      summary: Delete a module
+      operationId: deleteModule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteModuleRequest'
+      responses:
+        '204':
+          description: Module deleted successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+  /module/list:
+    get:
+      summary: List modules
+      operationId: listModules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListModulesRequest'
+      responses:
+        '200':
+          description: List of modules
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - type: object
+                    properties:
+                      success:
+                        allOf:
+                          - $ref: '#/components/schemas/JSONSuccessResponse'
+                          - type: object
+                            properties:
+                              code:
+                                type: string
+                                enum: [ok]
+                              data:
+                                $ref: '#/components/schemas/ListModulesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+components:
+  schemas:
+    Response:
+      type: object
+      properties:
+        success:
+          $ref: '#/components/schemas/JSONSuccessResponse'
+        error:
+          $ref: '#/components/schemas/JSONErrorResponse'
+    JSONSuccessResponse:
+      type: object
+      required:
+        - code
+        - data
+      properties:
+        code:
+          type: string
+          enum: [ok, created, deleted]
+        data: {}
+    JSONErrorResponse:
+      type: object
+      required:
+        - code
+        - data
+      properties:
+        code:
+          type: string
+          enum:
+            - internal_error
+            - not_found
+            - bad_request
+            - unsupported_media_type
+            - malformed_json_body
+            - body_validation
+            - form_data_too_large
+        data: {}
+    WorkspaceResourceReference:
+      type: object
+      required:
+        - name
+        - namespace
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
+          description: DNS 1123 subdomain
+        namespace:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          maxLength: 63
+          description: DNS 1123 label
+    WorkspaceConnection:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [kubeconfig, in-cluster]
+        secret:
+          $ref: '#/components/schemas/WorkspaceResourceReference'
+    WorkspaceAutoHibernation:
+      type: object
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+        schedule:
+          type: string
+          description: Cron expression (required if enabled is true)
+        wakeSchedule:
+          type: string
+          description: Cron expression
+    CreateWorkspaceRequest:
+      type: object
+      required:
+        - name
+        - connection
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
+          description: DNS 1123 subdomain
+        namespace:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          maxLength: 63
+          description: DNS 1123 label
+        from:
+          $ref: '#/components/schemas/WorkspaceResourceReference'
+        hibernated:
+          type: boolean
+        connection:
+          $ref: '#/components/schemas/WorkspaceConnection'
+        autoHibernation:
+          $ref: '#/components/schemas/WorkspaceAutoHibernation'
+    UpdateWorkspaceRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
+          description: DNS 1123 subdomain
+        namespace:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          maxLength: 63
+          description: DNS 1123 label
+        hibernated:
+          type: boolean
+        autoHibernation:
+          $ref: '#/components/schemas/WorkspaceAutoHibernation'
+    DeleteWorkspaceRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
+          description: DNS 1123 subdomain
+        namespace:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          maxLength: 63
+          description: DNS 1123 label
+    ListWorkspacesRequest:
+      type: object
+      properties:
+        limit:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 250
+          default: 25
+        continueToken:
+          type: string
+    WorkspaceResponse:
+      type: object
+      required:
+        - name
+        - namespace
+      properties:
+        name:
+          type: string
+        namespace:
+          type: string
+    WorkspaceListItem:
+      type: object
+      required:
+        - name
+        - namespace
+        - phase
+        - message
+        - type
+        - hibernated
+      properties:
+        name:
+          type: string
+        namespace:
+          type: string
+        phase:
+          type: string
+        message:
+          type: string
+        type:
+          type: string
+        hibernated:
+          type: boolean
+    ListWorkspacesResponse:
+      type: object
+      required:
+        - continueToken
+        - workspaces
+      properties:
+        continueToken:
+          type: string
+        workspaces:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkspaceListItem'
+    KubeconfigSecretResponse:
+      type: object
+      required:
+        - name
+        - namespace
+      properties:
+        name:
+          type: string
+        namespace:
+          type: string
+    DeleteKubeconfigSecretRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
+          description: DNS 1123 subdomain
+    ListKubeconfigSecretsRequest:
+      type: object
+      properties:
+        limit:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 250
+          default: 25
+        continueToken:
+          type: string
+    ListKubeconfigSecretsResponse:
+      type: object
+      required:
+        - continueToken
+        - secrets
+      properties:
+        continueToken:
+          type: string
+        secrets:
+          type: array
+          items:
+            $ref: '#/components/schemas/KubeconfigSecretResponse'
+    WorkspaceReference:
+      type: object
+      required:
+        - name
+        - namespace
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
+          description: DNS 1123 subdomain
+        namespace:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          maxLength: 63
+          description: DNS 1123 label
+    ModuleSource:
+      type: object
+      properties:
+        raw:
+          type: string
+          description: Raw YAML source
+        httpURL:
+          type: string
+          format: uri
+          description: HTTP URL to module source
+    CreateModuleRequest:
+      type: object
+      required:
+        - name
+        - workspace
+        - source
+        - config
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
+          description: DNS 1123 subdomain
+        namespace:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          maxLength: 63
+          description: DNS 1123 label
+        workspace:
+          $ref: '#/components/schemas/WorkspaceReference'
+        source:
+          $ref: '#/components/schemas/ModuleSource'
+        config:
+          type: object
+          additionalProperties: true
+        hibernated:
+          type: boolean
+    UpdateModuleRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
+          description: DNS 1123 subdomain
+        namespace:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          maxLength: 63
+          description: DNS 1123 label
+        hibernated:
+          type: boolean
+    DeleteModuleRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
+          description: DNS 1123 subdomain
+        namespace:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          maxLength: 63
+          description: DNS 1123 label
+    ListModulesRequest:
+      type: object
+      properties:
+        limit:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 250
+          default: 25
+        continueToken:
+          type: string
+    ModuleResponse:
+      type: object
+      required:
+        - name
+        - namespace
+      properties:
+        name:
+          type: string
+        namespace:
+          type: string
+    ModuleListItem:
+      type: object
+      required:
+        - name
+        - namespace
+        - phase
+        - message
+        - hibernated
+      properties:
+        name:
+          type: string
+        namespace:
+          type: string
+        phase:
+          type: string
+        message:
+          type: string
+        hibernated:
+          type: boolean
+    ListModulesResponse:
+      type: object
+      required:
+        - continueToken
+        - modules
+      properties:
+        continueToken:
+          type: string
+        modules:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModuleListItem'
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Response'
+              - type: object
+                properties:
+                  error:
+                    allOf:
+                      - $ref: '#/components/schemas/JSONErrorResponse'
+                      - type: object
+                        properties:
+                          code:
+                            type: string
+                            enum: [bad_request, malformed_json_body, body_validation]
+    UnsupportedMediaType:
+      description: Unsupported media type
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Response'
+              - type: object
+                properties:
+                  error:
+                    allOf:
+                      - $ref: '#/components/schemas/JSONErrorResponse'
+                      - type: object
+                        properties:
+                          code:
+                            type: string
+                            enum: [unsupported_media_type]
+                          data:
+                            type: string
+    FormDataTooLarge:
+      description: Form data too large
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Response'
+              - type: object
+                properties:
+                  error:
+                    allOf:
+                      - $ref: '#/components/schemas/JSONErrorResponse'
+                      - type: object
+                        properties:
+                          code:
+                            type: string
+                            enum: [form_data_too_large]
+                          data:
+                            type: string

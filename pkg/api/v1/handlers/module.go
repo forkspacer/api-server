@@ -96,7 +96,7 @@ func (h ModuleHandler) CreateHandle(w http.ResponseWriter, r *http.Request) {
 
 type UpdateModuleRequest struct {
 	Name       string  `json:"name" validate:"required,dns1123subdomain"`
-	Namespace  *string `json:"namespace,omitempty" validate:"omitempty,dns1123subdomain"`
+	Namespace  *string `json:"namespace,omitempty" validate:"omitempty,dns1123label"`
 	Hibernated *bool   `json:"hibernated,omitempty"`
 }
 

@@ -1,9 +1,21 @@
+# Version info
+VERSION ?= v1.0.0
+GIT_COMMIT ?= $(shell git rev-parse HEAD)
+BUILD_DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+
+# Linker flags
+LDFLAGS := -ldflags "-X github.com/forkspacer/api-server/pkg/version.Version=$(VERSION) -X github.com/forkspacer/api-server/pkg/version.GitCommit=$(GIT_COMMIT) -X github.com/forkspacer/api-server/pkg/version.BuildDate=$(BUILD_DATE)"
+
+IMG ?= ghcr.io/forkspacer/api-server:$(VERSION)
+
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 GOBIN=$(shell go env GOPATH)/bin
 else
 GOBIN=$(shell go env GOBIN)
 endif
+
+CONTAINER_TOOL ?= docker
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
@@ -51,7 +63,36 @@ lint-config: golangci-lint ## Verify golangci-lint linter configuration
 
 .PHONY: dev
 dev: fmt vet ## Run go vet against code.
-	go run ./cmd/main.go
+	go run $(LDFLAGS) ./cmd/main.go
+
+##@ Build
+
+.PHONY: docker-build
+docker-build: ## Build docker image
+	$(CONTAINER_TOOL) build \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
+		--build-arg BUILD_DATE=$(BUILD_DATE) \
+		-t ${IMG} .
+
+.PHONY: docker-push
+docker-push: ## Push docker image
+	$(CONTAINER_TOOL) push ${IMG}
+
+PLATFORMS ?= linux/arm64,linux/amd64,linux/s390x,linux/ppc64le
+.PHONY: docker-buildx
+docker-buildx: ## Build and push docker image
+	# copy existing Dockerfile and insert --platform=${BUILDPLATFORM} into Dockerfile.cross, and preserve the original Dockerfile
+	sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' Dockerfile > Dockerfile.cross
+	- $(CONTAINER_TOOL) buildx create --name api-builder
+	$(CONTAINER_TOOL) buildx use api-builder
+	- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
+		--build-arg BUILD_DATE=$(BUILD_DATE) \
+		--tag ${IMG} -f Dockerfile.cross .
+	- $(CONTAINER_TOOL) buildx rm api-builder
+	rm Dockerfile.cross
 
 ##@ Dependencies
 

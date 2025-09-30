@@ -1,6 +1,7 @@
 package v1
 
 import (
+	_ "embed"
 	"net/http"
 
 	"github.com/forkspacer/api-server/pkg/api/v1/handlers"
@@ -9,6 +10,12 @@ import (
 	"github.com/go-chi/cors"
 	"go.uber.org/zap"
 )
+
+//go:embed docs.html
+var docsHTML []byte
+
+//go:embed openapi.yaml
+var openAPISpec []byte
 
 func NewRouter(
 	logger *zap.Logger,
@@ -19,6 +26,24 @@ func NewRouter(
 	moduleHandler := handlers.NewModuleHandler(logger, forkspacerModuleService)
 
 	apiRouter := chi.NewRouter()
+
+	apiRouter.Get("/docs", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, err := w.Write(docsHTML)
+		if err != nil {
+			logger.Error("failed to write docs HTML response", zap.Error(err))
+		}
+	})
+
+	// Serve OpenAPI spec
+	apiRouter.Get("/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/x-yaml; charset=utf-8")
+		_, err := w.Write(openAPISpec)
+		if err != nil {
+			logger.Error("failed to write OpenAPI spec response", zap.Error(err))
+		}
+	})
+
 	apiRouter.Route("/workspace", func(r chi.Router) {
 		r.Post("/", workspaceHandler.CreateHandle)
 		r.Patch("/", workspaceHandler.UpdateHandle)
