@@ -47,17 +47,6 @@ Configure using environment variables:
 make dev
 ```
 
-**Production:**
-```bash
-DEV=false go run ./cmd/main.go
-```
-
-**Docker:**
-```bash
-make docker-build
-docker run -p 8421:8421 ghcr.io/forkspacer/api-server:v1.0.0
-```
-
 ## API Documentation
 
 Once running, visit:
@@ -125,7 +114,7 @@ pkg/
 
 ## License
 
-Part of the Forkspacer ecosystem.
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
 
 ## Support
 
