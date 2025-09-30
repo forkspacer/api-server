@@ -12,6 +12,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
 )
 
 type ForkspacerModuleService struct {
@@ -41,7 +42,7 @@ func NewForkspacerModuleService() (*ForkspacerModuleService, error) {
 }
 
 type ModuleSource struct {
-	Raw     map[string]any
+	Raw     []byte
 	HttpURL *string
 }
 
@@ -55,11 +56,6 @@ type ModuleCreateIn struct {
 }
 
 func (s ForkspacerModuleService) Create(ctx context.Context, moduleIn ModuleCreateIn) (*batchv1.Module, error) {
-	sourceRaw, err := json.Marshal(moduleIn.Source.Raw)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal source.raw: %w", err)
-	}
-
 	config, err := json.Marshal(moduleIn.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal config: %w", err)
@@ -67,6 +63,15 @@ func (s ForkspacerModuleService) Create(ctx context.Context, moduleIn ModuleCrea
 
 	if moduleIn.Namespace == nil {
 		moduleIn.Namespace = utils.ToPtr("default")
+	}
+
+	// Convert YAML bytes to JSON for RawExtension
+	var sourceRawJSON []byte
+	if moduleIn.Source.Raw != nil {
+		sourceRawJSON, err = yaml.YAMLToJSON(moduleIn.Source.Raw)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert YAML to JSON for source.raw: %w", err)
+		}
 	}
 
 	module := &batchv1.Module{
@@ -81,7 +86,7 @@ func (s ForkspacerModuleService) Create(ctx context.Context, moduleIn ModuleCrea
 			},
 			Source: batchv1.ModuleSource{
 				Raw: &runtime.RawExtension{
-					Raw: sourceRaw,
+					Raw: sourceRawJSON,
 				},
 				HttpURL: moduleIn.Source.HttpURL,
 			},

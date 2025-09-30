@@ -28,8 +28,8 @@ type WorkspaceReference struct {
 }
 
 type ModuleSource struct {
-	Raw     map[string]any `json:"raw" validate:"omitempty"`
-	HttpURL *string        `json:"httpURL" validate:"omitempty,http_url"`
+	Raw     *string `json:"raw" validate:"omitempty,yaml"`
+	HttpURL *string `json:"httpURL" validate:"omitempty,http_url"`
 }
 
 type CreateModuleRequest struct {
@@ -59,6 +59,11 @@ func (h ModuleHandler) CreateHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var sourceRawBytes []byte = nil
+	if requestData.Source.Raw != nil {
+		sourceRawBytes = []byte(*requestData.Source.Raw)
+	}
+
 	module, err := h.forkspacerModuleService.Create(r.Context(), forkspacer.ModuleCreateIn{
 		Name:      requestData.Name,
 		Namespace: requestData.Namespace,
@@ -67,7 +72,7 @@ func (h ModuleHandler) CreateHandle(w http.ResponseWriter, r *http.Request) {
 			Namespace: requestData.Workspace.Namespace,
 		},
 		Source: forkspacer.ModuleSource{
-			Raw:     requestData.Source.Raw,
+			Raw:     sourceRawBytes,
 			HttpURL: requestData.Source.HttpURL,
 		},
 		Config:     requestData.Config,

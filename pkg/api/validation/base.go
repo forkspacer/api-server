@@ -10,6 +10,7 @@ import (
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
+	"go.yaml.in/yaml/v3"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -63,6 +64,10 @@ func registerCustomValidations() error {
 		return err
 	}
 
+	if err := Validate.RegisterValidation("yaml", validateYAML); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -81,7 +86,6 @@ func registerTranslations() error {
 		return fmt.Errorf("failed to register default English translations: %w", err)
 	}
 
-	// Register translation for dns1123subdomain
 	if err := Validate.RegisterTranslation("dns1123subdomain", enTrans, func(ut ut.Translator) error {
 		return ut.Add(
 			"dns1123subdomain",
@@ -95,7 +99,6 @@ func registerTranslations() error {
 		return err
 	}
 
-	// Register translation for dns1123label
 	if err := Validate.RegisterTranslation("dns1123label", enTrans, func(ut ut.Translator) error {
 		return ut.Add(
 			"dns1123label",
@@ -109,7 +112,6 @@ func registerTranslations() error {
 		return err
 	}
 
-	// Register translation for dns1035label
 	if err := Validate.RegisterTranslation("dns1035label", enTrans, func(ut ut.Translator) error {
 		return ut.Add(
 			"dns1035label",
@@ -123,7 +125,6 @@ func registerTranslations() error {
 		return err
 	}
 
-	// Register translation for kubeconfig
 	if err := Validate.RegisterTranslation("kubeconfig", enTrans, func(ut ut.Translator) error {
 		return ut.Add(
 			"kubeconfig",
@@ -132,6 +133,19 @@ func registerTranslations() error {
 		)
 	}, func(ut ut.Translator, fe validator.FieldError) string {
 		t, _ := ut.T("kubeconfig", fe.Field())
+		return t
+	}); err != nil {
+		return err
+	}
+
+	if err := Validate.RegisterTranslation("yaml", enTrans, func(ut ut.Translator) error {
+		return ut.Add(
+			"yaml",
+			"{0} must be a valid YAML file",
+			true,
+		)
+	}, func(ut ut.Translator, fe validator.FieldError) string {
+		t, _ := ut.T("yaml", fe.Field())
 		return t
 	}); err != nil {
 		return err
@@ -224,4 +238,13 @@ func ValidateKubeconfig(fl validator.FieldLevel) bool {
 	}
 
 	return true
+}
+
+func validateYAML(fl validator.FieldLevel) bool {
+	yamlStr := fl.Field().String()
+
+	var temp any
+	err := yaml.Unmarshal([]byte(yamlStr), &temp)
+
+	return err == nil
 }
