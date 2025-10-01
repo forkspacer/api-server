@@ -30,7 +30,7 @@ func NewForkspacerWorkspaceService() (*ForkspacerWorkspaceService, error) {
 		return nil, fmt.Errorf("failed to add go client to schemes: %w", err)
 	}
 	if err := batchv1.AddToScheme(scheme); err != nil {
-		return nil, fmt.Errorf("failed to add batch.environment.sh/v1 to scheme: %w", err)
+		return nil, fmt.Errorf("failed to add batch.forkspacer.com/v1 to scheme: %w", err)
 	}
 
 	ctrlClient, err := client.New(restConfig, client.Options{Scheme: scheme})
