@@ -100,7 +100,7 @@ func (h WorkspaceHandler) DeleteKubeconfigSecretHandle(w http.ResponseWriter, r 
 	}
 }
 
-type ListKubeconfigSecretsRequest struct {
+type ListKubeconfigSecretsRequestQuery struct {
 	Limit         *int64  `json:"limit" validate:"omitempty,gte=1,lte=250"`
 	ContinueToken *string `json:"continueToken"`
 }
@@ -111,8 +111,22 @@ type ListKubeconfigSecretsResponse struct {
 }
 
 func (h WorkspaceHandler) ListKubeconfigSecretsHandle(w http.ResponseWriter, r *http.Request) {
-	var requestData = &ListKubeconfigSecretsRequest{}
-	if err := validation.JSONBodyReadAndValidate(w, r, requestData); err != nil {
+	var requestData = &ListKubeconfigSecretsRequestQuery{}
+
+	if r.URL.Query().Has("limit") {
+		qLimit, err := utils.ParseString[int64](r.URL.Query().Get("limit"))
+		if err != nil {
+			response.JSONBadRequest(w, err.Error())
+			return
+		}
+		requestData.Limit = &qLimit
+	}
+
+	if r.URL.Query().Has("continueToken") {
+		requestData.ContinueToken = utils.ToPtr(r.URL.Query().Get("continueToken"))
+	}
+
+	if err := validation.URLParamsValidate(r.Context(), w, requestData); err != nil {
 		return
 	}
 
@@ -296,7 +310,7 @@ func (h WorkspaceHandler) DeleteHandle(w http.ResponseWriter, r *http.Request) {
 	response.JSONDeleted(w)
 }
 
-type ListWorkspacesRequest struct {
+type ListWorkspacesRequestQuery struct {
 	Limit         *int64  `json:"limit,omitempty" validate:"omitempty,gte=1,lte=250"`
 	ContinueToken *string `json:"continueToken,omitempty"`
 }
@@ -316,8 +330,22 @@ type ListWorkspacesResponse struct {
 }
 
 func (h WorkspaceHandler) ListHandle(w http.ResponseWriter, r *http.Request) {
-	var requestData = &ListWorkspacesRequest{}
-	if err := validation.JSONBodyReadAndValidate(w, r, requestData); err != nil {
+	var requestData = &ListWorkspacesRequestQuery{}
+
+	if r.URL.Query().Has("limit") {
+		qLimit, err := utils.ParseString[int64](r.URL.Query().Get("limit"))
+		if err != nil {
+			response.JSONBadRequest(w, err.Error())
+			return
+		}
+		requestData.Limit = &qLimit
+	}
+
+	if r.URL.Query().Has("continueToken") {
+		requestData.ContinueToken = utils.ToPtr(r.URL.Query().Get("continueToken"))
+	}
+
+	if err := validation.URLParamsValidate(r.Context(), w, requestData); err != nil {
 		return
 	}
 

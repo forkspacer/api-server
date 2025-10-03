@@ -13,6 +13,7 @@ var ErrCodes = struct {
 	UnsupportedMediaType,
 	MalformedJSONBody,
 	BodyValidation,
+	QueryValidation,
 	FormDataTooLarge errCode
 }{
 	InternalServerError:  "internal_error",
@@ -21,6 +22,7 @@ var ErrCodes = struct {
 	UnsupportedMediaType: "unsupported_media_type",
 	MalformedJSONBody:    "malformed_json_body",
 	BodyValidation:       "body_validation",
+	QueryValidation:      "query_validation",
 	FormDataTooLarge:     "form_data_too_large",
 }
 

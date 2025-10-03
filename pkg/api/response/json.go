@@ -70,6 +70,10 @@ func JSONBodyValidationError(w http.ResponseWriter, errs map[string]string) {
 	JSONError(w, 400, NewJSONError(ErrCodes.BodyValidation, errs))
 }
 
+func JSONQueryValidationError(w http.ResponseWriter, errs map[string]string) {
+	JSONError(w, 400, NewJSONError(ErrCodes.QueryValidation, errs))
+}
+
 func JSONNotFound(w http.ResponseWriter) {
 	JSONError(w, 404, NewJSONError(ErrCodes.NotFound, "Not Found"))
 }

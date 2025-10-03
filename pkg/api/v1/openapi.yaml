@@ -94,12 +94,21 @@ paths:
     get:
       summary: List workspaces
       operationId: listWorkspaces
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ListWorkspacesRequest'
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            maximum: 250
+            default: 25
+        - name: continueToken
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         '200':
           description: List of workspaces
@@ -193,12 +202,21 @@ paths:
     get:
       summary: List kubeconfig secrets
       operationId: listKubeconfigSecrets
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ListKubeconfigSecretsRequest'
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            maximum: 250
+            default: 25
+        - name: continueToken
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         '200':
           description: List of kubeconfig secrets
@@ -310,12 +328,21 @@ paths:
     get:
       summary: List modules
       operationId: listModules
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ListModulesRequest'
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            maximum: 250
+            default: 25
+        - name: continueToken
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         '200':
           description: List of modules
@@ -374,6 +401,7 @@ components:
             - unsupported_media_type
             - malformed_json_body
             - body_validation
+            - query_validation
             - form_data_too_large
         data: {}
     WorkspaceResourceReference:
@@ -725,7 +753,7 @@ components:
                         properties:
                           code:
                             type: string
-                            enum: [bad_request, malformed_json_body, body_validation]
+                            enum: [bad_request, malformed_json_body, body_validation, query_validation]
     UnsupportedMediaType:
       description: Unsupported media type
       content:

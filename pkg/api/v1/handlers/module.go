@@ -148,7 +148,7 @@ func (h ModuleHandler) DeleteHandle(w http.ResponseWriter, r *http.Request) {
 	response.JSONDeleted(w)
 }
 
-type ListModulesRequest struct {
+type ListModulesRequestQuery struct {
 	Limit         *int64  `json:"limit,omitempty" validate:"omitempty,gte=1,lte=250"`
 	ContinueToken *string `json:"continueToken,omitempty"`
 }
@@ -167,8 +167,22 @@ type ListModulesResponse struct {
 }
 
 func (h ModuleHandler) ListHandle(w http.ResponseWriter, r *http.Request) {
-	var requestData = &ListModulesRequest{}
-	if err := validation.JSONBodyReadAndValidate(w, r, requestData); err != nil {
+	var requestData = &ListModulesRequestQuery{}
+
+	if r.URL.Query().Has("limit") {
+		qLimit, err := utils.ParseString[int64](r.URL.Query().Get("limit"))
+		if err != nil {
+			response.JSONBadRequest(w, err.Error())
+			return
+		}
+		requestData.Limit = &qLimit
+	}
+
+	if r.URL.Query().Has("continueToken") {
+		requestData.ContinueToken = utils.ToPtr(r.URL.Query().Get("continueToken"))
+	}
+
+	if err := validation.URLParamsValidate(r.Context(), w, requestData); err != nil {
 		return
 	}
 
