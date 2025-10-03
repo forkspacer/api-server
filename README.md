@@ -20,8 +20,9 @@ The Forkspacer API Server provides a REST API for creating, managing, and orches
 ### Prerequisites
 
 - Go 1.25+
-- Kubernetes cluster (v1.34+)
-- Forkspacer CRDs installed in the cluster
+- Kubernetes cluster (v1.20+)
+- Forkspacer operator and CRDs installed in the cluster
+  - If you haven't set up the operator yet, follow the [Development Guide](https://forkspacer.com/development/overview) to run it in dev mode
 
 ### Installation
 
@@ -39,6 +40,17 @@ Configure using environment variables:
 |----------|---------|-------------|
 | `DEV` | `true` | Enable development mode |
 | `API_PORT` | `8421` | HTTP server port |
+| `KUBECONFIG` | `~/.kube/config` | Path to Kubernetes config file |
+
+**Kubernetes Connection:**
+
+The API server connects to Kubernetes using your kubeconfig. It supports:
+- **Local development**: Uses `KUBECONFIG` or `~/.kube/config`
+- **In-cluster**: Automatically detects when running inside a Kubernetes pod
+
+**RBAC Requirements:**
+
+The API server requires permissions to manage Forkspacer resources. When running locally, it uses your current kubeconfig context's credentials.
 
 ### Running
 
@@ -59,24 +71,6 @@ Once running, visit:
 ```bash
 make fmt
 make lint
-```
-
-**Run tests:**
-```bash
-go test ./...
-```
-
-## Docker
-
-```bash
-# Build
-make docker-build
-
-# Multi-platform build
-make docker-buildx PLATFORMS=linux/amd64,linux/arm64
-
-# Push
-make docker-push IMG=your-registry/api-server:tag
 ```
 
 ## Project Structure
