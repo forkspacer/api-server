@@ -130,9 +130,14 @@ type WorkspaceCreateIn struct {
 func (s ForkspacerWorkspaceService) Create(
 	ctx context.Context, workspaceIn WorkspaceCreateIn,
 ) (*batchv1.Workspace, error) {
+	if workspaceIn.Namespace == nil {
+		workspaceIn.Namespace = utils.ToPtr("default")
+	}
+
 	workspace := &batchv1.Workspace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: workspaceIn.Name,
+			Name:      workspaceIn.Name,
+			Namespace: *workspaceIn.Namespace,
 		},
 		Spec: batchv1.WorkspaceSpec{
 			Type:       batchv1.WorkspaceTypeKubernetes,
@@ -141,11 +146,6 @@ func (s ForkspacerWorkspaceService) Create(
 				Type: batchv1.WorkspaceConnectionType(workspaceIn.Connection.Type),
 			},
 		},
-	}
-
-	if workspaceIn.Namespace == nil {
-		workspaceIn.Namespace = utils.ToPtr("default")
-		workspace.Namespace = *workspaceIn.Namespace
 	}
 
 	if workspaceIn.From != nil {
