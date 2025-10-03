@@ -150,7 +150,7 @@ func (s ForkspacerWorkspaceService) Create(
 
 	if workspaceIn.From != nil {
 		workspace.Spec.From = &batchv1.WorkspaceFromReference{
-			Name:      workspaceIn.Name,
+			Name:      workspaceIn.From.Name,
 			Namespace: workspaceIn.From.Namespace,
 		}
 	}
