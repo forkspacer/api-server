@@ -131,8 +131,6 @@ paths:
                                 $ref: '#/components/schemas/ListWorkspacesResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '415':
-          $ref: '#/components/responses/UnsupportedMediaType'
   /workspace/connection/kubeconfig/:
     post:
       summary: Create a kubeconfig secret
@@ -239,8 +237,6 @@ paths:
                                 $ref: '#/components/schemas/ListKubeconfigSecretsResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '415':
-          $ref: '#/components/responses/UnsupportedMediaType'
   /module/:
     post:
       summary: Create a new module
@@ -365,8 +361,6 @@ paths:
                                 $ref: '#/components/schemas/ListModulesResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '415':
-          $ref: '#/components/responses/UnsupportedMediaType'
 components:
   schemas:
     Response:
