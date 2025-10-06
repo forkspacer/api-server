@@ -69,7 +69,7 @@ func NewRouter(
 	baseRouter := chi.NewRouter()
 	baseRouter.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"https://*", "http://*"},
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 	}))
 
 	baseRouter.Mount("/v1", apiRouter)
