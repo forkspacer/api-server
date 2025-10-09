@@ -59,6 +59,53 @@ The API server requires permissions to manage Forkspacer resources. When running
 make dev
 ```
 
+## Production Deployment & Release Process
+
+The API server is designed to be deployed as part of the main Forkspacer Helm chart. Follow this workflow for production releases:
+
+### Release Process
+
+**1. Tag and Release Docker Image:**
+```bash
+# From the api-server repository
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+This triggers GitHub Actions to:
+- Build and test the application
+- Create Docker image `ghcr.io/forkspacer/api-server:v1.0.0`
+- Push to GitHub Container Registry
+- Create GitHub release
+
+**2. Update Main Forkspacer Deployment:**
+```bash
+# From the main forkspacer repository
+cd /path/to/forkspacer
+helm upgrade forkspacer ./helm \
+  --set apiServer.enabled=true \
+  --set apiServer.image.tag=v1.0.0 \
+  --namespace operator-system
+```
+
+### Helm Integration
+
+The API server is included as a subchart in the main Forkspacer Helm chart:
+
+```yaml
+# In main forkspacer values.yaml
+apiServer:
+  enabled: true  # Set to false to disable API server
+  image:
+    repository: ghcr.io/forkspacer/api-server
+    tag: "v1.0.0"
+  service:
+    type: ClusterIP
+    port: 8421
+```
+
+For complete installation instructions, see the [main Forkspacer repository](https://github.com/forkspacer/forkspacer).
+
 ## API Documentation
 
 Once running, visit:
