@@ -2,8 +2,8 @@ apiVersion: v2
 name: api-server
 description: REST API backend for Forkspacer operator
 type: application
-version: 1.0.0
-appVersion: "v1.0.0"
+version: 0.1.1
+appVersion: "v0.1.1"
 keywords:
   - api
   - backend

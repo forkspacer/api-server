@@ -93,12 +93,29 @@ helm install forkspacer forkspacer/forkspacer \
 
 ### Release Process
 
-**1. Tag and Release:**
+**1. Update Version (Required before release):**
 ```bash
-# From the api-server repository
+# Update all version references in Helm chart and Makefile
+make update-version VERSION=v1.0.0
+```
+
+This command updates:
+- Helm Chart.yaml version and appVersion
+- values.yaml image tag
+- Makefile VERSION variable
+
+**2. Commit and Tag Release:**
+```bash
+# Commit the version changes
+git add .
+git commit -m "chore: bump version to v1.0.0"
+
+# Create and push tag
 git tag v1.0.0
 git push origin v1.0.0
 ```
+
+**3. Automated Release:**
 
 This triggers automated GitHub Actions workflow to:
 - Build and test the application
@@ -107,7 +124,7 @@ This triggers automated GitHub Actions workflow to:
 - Automatically update dependency in main Forkspacer repository
 - Create GitHub release
 
-**2. Upgrade Existing Installation:**
+**4. Upgrade Existing Installation:**
 
 For standalone deployment:
 ```bash
