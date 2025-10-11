@@ -94,6 +94,23 @@ docker-buildx: ## Build and push docker image
 	- $(CONTAINER_TOOL) buildx rm api-builder
 	rm Dockerfile.cross
 
+##@ Version Management
+
+.PHONY: update-version
+update-version: ## Update version in Helm chart. Usage: make update-version VERSION=v1.0.1
+	@if [ -z "$(VERSION)" ]; then \
+		echo "❌ Error: VERSION not specified. Usage: make update-version VERSION=v1.0.1"; \
+		exit 1; \
+	fi
+	@echo "🔄 Updating api-server to $(VERSION)..."
+	@CHART_VERSION=$${VERSION#v}; \
+	sed -i.bak "s/^version: .*/version: $$CHART_VERSION/" helm/Chart.yaml
+	@sed -i.bak "s/^appVersion: .*/appVersion: \"$(VERSION)\"/" helm/Chart.yaml
+	@sed -i.bak "s/tag: \".*\"/tag: \"$(VERSION)\"/" helm/values.yaml
+	@sed -i.bak "s/^VERSION ?= .*/VERSION ?= $(VERSION)/" Makefile
+	@rm -f helm/Chart.yaml.bak helm/values.yaml.bak Makefile.bak
+	@echo "✅ Updated api-server to $(VERSION)"
+
 ##@ Dependencies
 
 ## Location to install dependencies to
