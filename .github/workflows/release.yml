@@ -8,6 +8,8 @@ on:
 permissions:
   contents: write
   packages: write
+  pages: write
+  id-token: write
 
 env:
   IMAGE_REPO: ghcr.io/forkspacer/api-server
@@ -26,8 +28,12 @@ jobs:
           go-version-file: go.mod
 
       - name: Extract release tag
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        run: |
+          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          echo "CHART_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
+      - name: Update Helm Chart version
+        run: make update-version VERSION=$VERSION
 
       - name: Build application
         run: go build -v ./...
@@ -52,6 +58,38 @@ jobs:
             ${{ env.IMAGE_REPO }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4.2.0
+
+      - name: Package and publish Helm chart
+        run: |
+          helm package helm/
+          helm repo index . --url https://forkspacer.github.io/api-server
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+
+      - name: Notify forkspacer repository of new version
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.DEPENDENCY_UPDATE_TOKEN }}
+          repository: forkspacer/forkspacer
+          event-type: dependency-update
+          client-payload: |
+            {
+              "component": "api-server",
+              "version": "${{ env.VERSION }}",
+              "chart_version": "${{ env.CHART_VERSION }}"
+            }
 
       - name: Create GitHub Release
         uses: actions/create-release@v1

@@ -59,52 +59,102 @@ The API server requires permissions to manage Forkspacer resources. When running
 make dev
 ```
 
-## Production Deployment & Release Process
+## Production Deployment & Installation
 
-The API server is designed to be deployed as part of the main Forkspacer Helm chart. Follow this workflow for production releases:
+The API server can be deployed either standalone or as part of the main Forkspacer Helm chart.
+
+### Installation Options
+
+**Option 1: Standalone Deployment (Recommended for development)**
+
+```bash
+# Add the Helm repository
+helm repo add forkspacer https://forkspacer.github.io/api-server
+helm repo update
+
+# Install the API server
+helm install api-server forkspacer/api-server \
+  --namespace api-server \
+  --create-namespace \
+  --set image.tag=v1.0.0
+```
+
+**Option 2: As Part of Main Forkspacer (Recommended for production)**
+
+The API server is automatically included when you install the main Forkspacer operator:
+
+```bash
+# Install complete Forkspacer with API server enabled
+helm install forkspacer forkspacer/forkspacer \
+  --set apiServer.enabled=true \
+  --namespace operator-system \
+  --create-namespace
+```
 
 ### Release Process
 
-**1. Tag and Release Docker Image:**
+**1. Tag and Release:**
 ```bash
 # From the api-server repository
 git tag v1.0.0
 git push origin v1.0.0
 ```
 
-This triggers GitHub Actions to:
+This triggers automated GitHub Actions workflow to:
 - Build and test the application
 - Create Docker image `ghcr.io/forkspacer/api-server:v1.0.0`
-- Push to GitHub Container Registry
+- Package and publish Helm chart to GitHub Pages
+- Automatically update dependency in main Forkspacer repository
 - Create GitHub release
 
-**2. Update Main Forkspacer Deployment:**
+**2. Upgrade Existing Installation:**
+
+For standalone deployment:
 ```bash
-# From the main forkspacer repository
-cd /path/to/forkspacer
-helm upgrade forkspacer ./helm \
-  --set apiServer.enabled=true \
-  --set apiServer.image.tag=v1.0.0 \
-  --namespace operator-system
+helm upgrade api-server forkspacer/api-server \
+  --set image.tag=v1.0.0
 ```
 
-### Helm Integration
+For main Forkspacer deployment:
+```bash
+helm upgrade forkspacer forkspacer/forkspacer \
+  --set apiServer.image.tag=v1.0.0
+```
 
-The API server is included as a subchart in the main Forkspacer Helm chart:
+### Helm Chart Configuration
 
+**Standalone Values:**
 ```yaml
-# In main forkspacer values.yaml
-apiServer:
-  enabled: true  # Set to false to disable API server
-  image:
-    repository: ghcr.io/forkspacer/api-server
-    tag: "v1.0.0"
-  service:
-    type: ClusterIP
-    port: 8421
+# values.yaml for standalone deployment
+replicaCount: 1
+
+image:
+  repository: ghcr.io/forkspacer/api-server
+  tag: "v1.0.0"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8421
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+env:
+  API_PORT: "8421"
+  DEV: "false"
 ```
 
-For complete installation instructions, see the [main Forkspacer repository](https://github.com/forkspacer/forkspacer).
+**Integration with Main Forkspacer:**
+The chart is designed to work seamlessly as a subchart. Global values from the parent chart will override local values when deployed as part of the main Forkspacer installation.
+
+For complete integration details, see the [main Forkspacer repository](https://github.com/forkspacer/forkspacer).
 
 ## API Documentation
 
