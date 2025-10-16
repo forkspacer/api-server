@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/forkspacer/api-server/pkg/api/response"
@@ -154,11 +155,13 @@ type ListModulesRequestQuery struct {
 }
 
 type ModuleListItem struct {
-	Name       string `json:"name"`
-	Namespace  string `json:"namespace"`
-	Phase      string `json:"phase"`
-	Message    string `json:"message"`
-	Hibernated bool   `json:"hibernated"`
+	Name       string              `json:"name"`
+	Namespace  string              `json:"namespace"`
+	Phase      string              `json:"phase"`
+	Message    string              `json:"message"`
+	Hibernated bool                `json:"hibernated"`
+	Type       string              `json:"type"`
+	Workspace  *WorkspaceReference `json:"workspace,omitempty"`
 }
 
 type ListModulesResponse struct {
@@ -216,12 +219,31 @@ func (h ModuleHandler) ListHandle(w http.ResponseWriter, r *http.Request) {
 			message = *module.Status.Message
 		}
 
+		// Extract module type from source
+		moduleType := "Unknown"
+		if module.Spec.Source.Raw != nil && len(module.Spec.Source.Raw.Raw) > 0 {
+			// Parse the raw JSON to extract the kind field
+			var sourceData map[string]interface{}
+			if err := json.Unmarshal(module.Spec.Source.Raw.Raw, &sourceData); err == nil {
+				if kind, ok := sourceData["kind"].(string); ok {
+					moduleType = kind
+				}
+			}
+		} else if module.Spec.Source.HttpURL != nil {
+			moduleType = "Remote"
+		}
+
 		responseData.Modules[i] = ModuleListItem{
 			Name:       module.Name,
 			Namespace:  module.Namespace,
 			Phase:      string(module.Status.Phase),
 			Hibernated: hibernated,
 			Message:    message,
+			Type:       moduleType,
+			Workspace: &WorkspaceReference{
+				Name:      module.Spec.Workspace.Name,
+				Namespace: module.Spec.Workspace.Namespace,
+			},
 		}
 	}
 
