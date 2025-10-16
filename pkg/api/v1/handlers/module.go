@@ -222,7 +222,6 @@ func (h ModuleHandler) ListHandle(w http.ResponseWriter, r *http.Request) {
 		// Extract module type from source
 		moduleType := "Unknown"
 		if module.Spec.Source.Raw != nil && len(module.Spec.Source.Raw.Raw) > 0 {
-			// Parse the raw JSON to extract the kind field
 			var sourceData map[string]interface{}
 			if err := json.Unmarshal(module.Spec.Source.Raw.Raw, &sourceData); err == nil {
 				if kind, ok := sourceData["kind"].(string); ok {
