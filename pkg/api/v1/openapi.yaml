@@ -424,6 +424,10 @@ components:
           enum: [kubeconfig, in-cluster]
         secret:
           $ref: '#/components/schemas/WorkspaceResourceReference'
+        key:
+          type: string
+          minLength: 1
+          description: Key in the secret to retrieve. Defaults to "kubeconfig"
     WorkspaceAutoHibernation:
       type: object
       required:
@@ -437,6 +441,19 @@ components:
         wakeSchedule:
           type: string
           description: Cron expression
+    ManagedCluster:
+      type: object
+      properties:
+        backend:
+          type: string
+          enum: [vcluster, k3d, kind]
+          default: vcluster
+          description: Which cluster technology to use
+        distro:
+          type: string
+          enum: [k3s, k0s, k8s, eks]
+          default: k3s
+          description: Kubernetes distribution (for vcluster)
     CreateWorkspaceRequest:
       type: object
       required:
@@ -453,14 +470,31 @@ components:
           pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
           maxLength: 63
           description: DNS 1123 label
+        type:
+          type: string
+          enum: [kubernetes, managed]
+          default: kubernetes
+          description: Workspace type
         from:
           $ref: '#/components/schemas/WorkspaceResourceReference'
         hibernated:
           type: boolean
         connection:
           $ref: '#/components/schemas/WorkspaceConnection'
+        managedCluster:
+          $ref: '#/components/schemas/ManagedCluster'
         autoHibernation:
           $ref: '#/components/schemas/WorkspaceAutoHibernation'
+        namespacePrefix:
+          type: string
+          pattern: '^[a-z0-9][-a-z0-9]*$'
+          minLength: 1
+          maxLength: 53
+          description: Prefix for all module deployment namespaces
+        createNamespace:
+          type: boolean
+          default: false
+          description: Auto-create prefixed namespaces (requires namespacePrefix)
     UpdateWorkspaceRequest:
       type: object
       required:
@@ -480,6 +514,17 @@ components:
           type: boolean
         autoHibernation:
           $ref: '#/components/schemas/WorkspaceAutoHibernation'
+        managedCluster:
+          $ref: '#/components/schemas/ManagedCluster'
+        namespacePrefix:
+          type: string
+          pattern: '^[a-z0-9][-a-z0-9]*$'
+          minLength: 1
+          maxLength: 53
+          description: Prefix for all module deployment namespaces
+        createNamespace:
+          type: boolean
+          description: Auto-create prefixed namespaces (requires namespacePrefix)
     DeleteWorkspaceRequest:
       type: object
       required:
@@ -609,6 +654,96 @@ components:
           pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
           maxLength: 63
           description: DNS 1123 label
+    ModuleSourceConfigMapRef:
+      type: object
+      required:
+        - name
+        - namespace
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
+          description: DNS 1123 subdomain
+        namespace:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          maxLength: 63
+          description: DNS 1123 label
+        key:
+          type: string
+          minLength: 1
+          description: Key in the ConfigMap to retrieve
+    ModuleSourceChartRepository:
+      type: object
+      required:
+        - url
+        - chart
+      properties:
+        url:
+          type: string
+          minLength: 1
+          description: Helm repository URL
+        chart:
+          type: string
+          minLength: 1
+          description: Chart name
+        version:
+          type: string
+          description: Chart version (optional)
+    ModuleSourceChartGit:
+      type: object
+      required:
+        - repo
+        - path
+        - revision
+      properties:
+        repo:
+          type: string
+          minLength: 1
+          description: Git repository URL (https or ssh)
+        path:
+          type: string
+          minLength: 1
+          description: Path to the chart directory containing Chart.yaml
+        revision:
+          type: string
+          minLength: 1
+          default: main
+          description: Git revision (branch, tag)
+    ModuleSourceChartRef:
+      type: object
+      properties:
+        configMap:
+          $ref: '#/components/schemas/ModuleSourceConfigMapRef'
+        repository:
+          $ref: '#/components/schemas/ModuleSourceChartRepository'
+        git:
+          $ref: '#/components/schemas/ModuleSourceChartGit'
+    ModuleSourceExistingHelmReleaseRef:
+      type: object
+      required:
+        - name
+        - namespace
+        - chartSource
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
+          description: Name of the existing Helm release
+        namespace:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          maxLength: 63
+          description: Namespace of the existing Helm release
+        chartSource:
+          $ref: '#/components/schemas/ModuleSourceChartRef'
+          description: Helm chart source for managing this release
+        values:
+          type: object
+          additionalProperties: true
+          description: Override values merged with existing release values
     ModuleSource:
       type: object
       properties:
@@ -619,6 +754,12 @@ components:
           type: string
           format: uri
           description: HTTP URL to module source
+        configMap:
+          $ref: '#/components/schemas/ModuleSourceConfigMapRef'
+          description: Reference to a ConfigMap containing module source
+        existingHelmRelease:
+          $ref: '#/components/schemas/ModuleSourceExistingHelmReleaseRef'
+          description: Reference to an existing Helm release to manage
     CreateModuleRequest:
       type: object
       required:

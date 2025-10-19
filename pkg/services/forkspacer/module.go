@@ -41,9 +41,42 @@ func NewForkspacerModuleService() (*ForkspacerModuleService, error) {
 	return &ForkspacerModuleService{client: ctrlClient}, nil
 }
 
+type ModuleSourceConfigMapRef struct {
+	Name      string
+	Namespace string
+	Key       *string
+}
+
+type ModuleSourceChartRepository struct {
+	URL     string
+	Chart   string
+	Version *string
+}
+
+type ModuleSourceChartGit struct {
+	Repo     string
+	Path     string
+	Revision string
+}
+
+type ModuleSourceChartRef struct {
+	ConfigMap  *ModuleSourceConfigMapRef
+	Repository *ModuleSourceChartRepository
+	Git        *ModuleSourceChartGit
+}
+
+type ModuleSourceExistingHelmReleaseRef struct {
+	Name        string
+	Namespace   string
+	ChartSource ModuleSourceChartRef
+	Values      map[string]any
+}
+
 type ModuleSource struct {
-	Raw     []byte
-	HttpURL *string
+	Raw                 []byte
+	HttpURL             *string
+	ConfigMap           *ModuleSourceConfigMapRef
+	ExistingHelmRelease *ModuleSourceExistingHelmReleaseRef
 }
 
 type ModuleCreateIn struct {
@@ -84,17 +117,81 @@ func (s ForkspacerModuleService) Create(ctx context.Context, moduleIn ModuleCrea
 				Name:      moduleIn.Workspace.Name,
 				Namespace: moduleIn.Workspace.Namespace,
 			},
-			Source: batchv1.ModuleSource{
-				Raw: &runtime.RawExtension{
-					Raw: sourceRawJSON,
-				},
-				HttpURL: moduleIn.Source.HttpURL,
-			},
+			Source: batchv1.ModuleSource{},
 			Config: &runtime.RawExtension{
 				Raw: config,
 			},
-			Hibernated: utils.ToPtr(moduleIn.Hibernated),
+			Hibernated: moduleIn.Hibernated,
 		},
+	}
+
+	// Set source fields
+	if moduleIn.Source.Raw != nil {
+		module.Spec.Source.Raw = &runtime.RawExtension{
+			Raw: sourceRawJSON,
+		}
+	}
+
+	if moduleIn.Source.HttpURL != nil {
+		module.Spec.Source.HttpURL = moduleIn.Source.HttpURL
+	}
+
+	if moduleIn.Source.ConfigMap != nil {
+		module.Spec.Source.ConfigMap = &batchv1.ModuleSourceConfigMapRef{
+			Name:      moduleIn.Source.ConfigMap.Name,
+			Namespace: moduleIn.Source.ConfigMap.Namespace,
+		}
+		if moduleIn.Source.ConfigMap.Key != nil {
+			module.Spec.Source.ConfigMap.Key = *moduleIn.Source.ConfigMap.Key
+		}
+	}
+
+	if moduleIn.Source.ExistingHelmRelease != nil {
+		valuesJSON, err := json.Marshal(moduleIn.Source.ExistingHelmRelease.Values)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal existingHelmRelease values: %w", err)
+		}
+
+		module.Spec.Source.ExistingHelmRelease = &batchv1.ModuleSourceExistingHelmReleaseRef{
+			Name:        moduleIn.Source.ExistingHelmRelease.Name,
+			Namespace:   moduleIn.Source.ExistingHelmRelease.Namespace,
+			ChartSource: batchv1.ModuleSourceChartRef{},
+		}
+
+		if moduleIn.Source.ExistingHelmRelease.Values != nil {
+			module.Spec.Source.ExistingHelmRelease.Values = &runtime.RawExtension{
+				Raw: valuesJSON,
+			}
+		}
+
+		// Set chart source
+		if moduleIn.Source.ExistingHelmRelease.ChartSource.ConfigMap != nil {
+			module.Spec.Source.ExistingHelmRelease.ChartSource.ConfigMap = &batchv1.ModuleSourceConfigMapRef{
+				Name:      moduleIn.Source.ExistingHelmRelease.ChartSource.ConfigMap.Name,
+				Namespace: moduleIn.Source.ExistingHelmRelease.ChartSource.ConfigMap.Namespace,
+			}
+			if moduleIn.Source.ExistingHelmRelease.ChartSource.ConfigMap.Key != nil {
+				module.Spec.Source.ExistingHelmRelease.ChartSource.ConfigMap.Key = *moduleIn.Source.ExistingHelmRelease.ChartSource.ConfigMap.Key
+			}
+		}
+
+		if moduleIn.Source.ExistingHelmRelease.ChartSource.Repository != nil {
+			module.Spec.Source.ExistingHelmRelease.ChartSource.Repository = &batchv1.ModuleSourceChartRepository{
+				URL:   moduleIn.Source.ExistingHelmRelease.ChartSource.Repository.URL,
+				Chart: moduleIn.Source.ExistingHelmRelease.ChartSource.Repository.Chart,
+			}
+			if moduleIn.Source.ExistingHelmRelease.ChartSource.Repository.Version != nil {
+				module.Spec.Source.ExistingHelmRelease.ChartSource.Repository.Version = moduleIn.Source.ExistingHelmRelease.ChartSource.Repository.Version
+			}
+		}
+
+		if moduleIn.Source.ExistingHelmRelease.ChartSource.Git != nil {
+			module.Spec.Source.ExistingHelmRelease.ChartSource.Git = &batchv1.ModuleSourceChartGit{
+				Repo:     moduleIn.Source.ExistingHelmRelease.ChartSource.Git.Repo,
+				Path:     moduleIn.Source.ExistingHelmRelease.ChartSource.Git.Path,
+				Revision: moduleIn.Source.ExistingHelmRelease.ChartSource.Git.Revision,
+			}
+		}
 	}
 
 	return module, s.client.Create(ctx, module)
@@ -125,7 +222,7 @@ func (s ForkspacerModuleService) Update(
 
 	// Update only the Hibernated field
 	if updateIn.Hibernated != nil {
-		module.Spec.Hibernated = updateIn.Hibernated
+		module.Spec.Hibernated = *updateIn.Hibernated
 	}
 
 	return module, s.client.Update(ctx, module)

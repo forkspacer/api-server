@@ -110,6 +110,7 @@ func (s ForkspacerWorkspaceService) ListKubeconfigSecrets(
 type WorkspaceCreateConnectionIn struct {
 	Type   string
 	Secret *ResourceReference
+	Key    *string
 }
 
 type WorkspaceAutoHibernationIn struct {
@@ -118,13 +119,22 @@ type WorkspaceAutoHibernationIn struct {
 	WakeSchedule *string
 }
 
+type ManagedClusterIn struct {
+	Backend *string
+	Distro  *string
+}
+
 type WorkspaceCreateIn struct {
 	Name            string
 	Namespace       *string
+	Type            *string
 	From            *ResourceReference
 	Hibernated      bool
 	Connection      *WorkspaceCreateConnectionIn
+	ManagedCluster  *ManagedClusterIn
 	AutoHibernation *WorkspaceAutoHibernationIn
+	NamespacePrefix *string
+	CreateNamespace *bool
 }
 
 func (s ForkspacerWorkspaceService) Create(
@@ -134,15 +144,21 @@ func (s ForkspacerWorkspaceService) Create(
 		workspaceIn.Namespace = utils.ToPtr("default")
 	}
 
+	// Set default workspace type to kubernetes if not specified
+	workspaceType := batchv1.WorkspaceTypeKubernetes
+	if workspaceIn.Type != nil {
+		workspaceType = batchv1.WorkspaceType(*workspaceIn.Type)
+	}
+
 	workspace := &batchv1.Workspace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workspaceIn.Name,
 			Namespace: *workspaceIn.Namespace,
 		},
 		Spec: batchv1.WorkspaceSpec{
-			Type:       batchv1.WorkspaceTypeKubernetes,
-			Hibernated: utils.ToPtr(workspaceIn.Hibernated),
-			Connection: &batchv1.WorkspaceConnection{
+			Type:       workspaceType,
+			Hibernated: workspaceIn.Hibernated,
+			Connection: batchv1.WorkspaceConnection{
 				Type: batchv1.WorkspaceConnectionType(workspaceIn.Connection.Type),
 			},
 		},
@@ -156,14 +172,37 @@ func (s ForkspacerWorkspaceService) Create(
 	}
 
 	if workspaceIn.Connection != nil && workspaceIn.Connection.Secret != nil {
-		workspace.Spec.Connection.SecretReference.Name = workspaceIn.Connection.Secret.Name
-		workspace.Spec.Connection.SecretReference.Namespace = workspaceIn.Connection.Secret.Namespace
+		workspace.Spec.Connection.SecretReference = &batchv1.WorkspaceConnectionSecretReference{
+			Name:      workspaceIn.Connection.Secret.Name,
+			Namespace: workspaceIn.Connection.Secret.Namespace,
+		}
+		if workspaceIn.Connection.Key != nil {
+			workspace.Spec.Connection.SecretReference.Key = *workspaceIn.Connection.Key
+		}
 	}
 
 	if workspaceIn.AutoHibernation != nil {
 		workspace.Spec.AutoHibernation.Enabled = workspaceIn.AutoHibernation.Enabled
 		workspace.Spec.AutoHibernation.Schedule = workspaceIn.AutoHibernation.Schedule
 		workspace.Spec.AutoHibernation.WakeSchedule = workspaceIn.AutoHibernation.WakeSchedule
+	}
+
+	if workspaceIn.ManagedCluster != nil {
+		workspace.Spec.ManagedCluster = &batchv1.ManagedClusterSpec{}
+		if workspaceIn.ManagedCluster.Backend != nil {
+			workspace.Spec.ManagedCluster.Backend = batchv1.ManagedClusterBackend(*workspaceIn.ManagedCluster.Backend)
+		}
+		if workspaceIn.ManagedCluster.Distro != nil {
+			workspace.Spec.ManagedCluster.Distro = *workspaceIn.ManagedCluster.Distro
+		}
+	}
+
+	if workspaceIn.NamespacePrefix != nil {
+		workspace.Spec.NamespacePrefix = *workspaceIn.NamespacePrefix
+	}
+
+	if workspaceIn.CreateNamespace != nil {
+		workspace.Spec.CreateNamespace = *workspaceIn.CreateNamespace
 	}
 
 	return workspace, s.client.Create(ctx, workspace)
@@ -208,6 +247,9 @@ type WorkspaceUpdateIn struct {
 	Namespace       *string
 	Hibernated      *bool
 	AutoHibernation *WorkspaceAutoHibernationIn
+	ManagedCluster  *ManagedClusterIn
+	NamespacePrefix *string
+	CreateNamespace *bool
 }
 
 func (s ForkspacerWorkspaceService) Update(
@@ -233,13 +275,33 @@ func (s ForkspacerWorkspaceService) Update(
 
 			// Update only the allowed fields
 			if updateIn.Hibernated != nil {
-				workspace.Spec.Hibernated = updateIn.Hibernated
+				workspace.Spec.Hibernated = *updateIn.Hibernated
 			}
 
 			if updateIn.AutoHibernation != nil {
 				workspace.Spec.AutoHibernation.Enabled = updateIn.AutoHibernation.Enabled
 				workspace.Spec.AutoHibernation.Schedule = updateIn.AutoHibernation.Schedule
 				workspace.Spec.AutoHibernation.WakeSchedule = updateIn.AutoHibernation.WakeSchedule
+			}
+
+			if updateIn.ManagedCluster != nil {
+				if workspace.Spec.ManagedCluster == nil {
+					workspace.Spec.ManagedCluster = &batchv1.ManagedClusterSpec{}
+				}
+				if updateIn.ManagedCluster.Backend != nil {
+					workspace.Spec.ManagedCluster.Backend = batchv1.ManagedClusterBackend(*updateIn.ManagedCluster.Backend)
+				}
+				if updateIn.ManagedCluster.Distro != nil {
+					workspace.Spec.ManagedCluster.Distro = *updateIn.ManagedCluster.Distro
+				}
+			}
+
+			if updateIn.NamespacePrefix != nil {
+				workspace.Spec.NamespacePrefix = *updateIn.NamespacePrefix
+			}
+
+			if updateIn.CreateNamespace != nil {
+				workspace.Spec.CreateNamespace = *updateIn.CreateNamespace
 			}
 
 			return s.client.Update(ctx, workspace)

@@ -28,9 +28,42 @@ type WorkspaceReference struct {
 	Namespace string `json:"namespace" validate:"required,dns1123label"`
 }
 
+type ModuleSourceConfigMapRef struct {
+	Name      string  `json:"name" validate:"required,dns1123subdomain"`
+	Namespace string  `json:"namespace" validate:"required,dns1123label"`
+	Key       *string `json:"key,omitempty" validate:"omitempty,min=1"`
+}
+
+type ModuleSourceChartRepository struct {
+	URL     string  `json:"url" validate:"required,min=1"`
+	Chart   string  `json:"chart" validate:"required,min=1"`
+	Version *string `json:"version,omitempty"`
+}
+
+type ModuleSourceChartGit struct {
+	Repo     string `json:"repo" validate:"required,min=1"`
+	Path     string `json:"path" validate:"required,min=1"`
+	Revision string `json:"revision" validate:"required,min=1"`
+}
+
+type ModuleSourceChartRef struct {
+	ConfigMap  *ModuleSourceConfigMapRef    `json:"configMap,omitempty"`
+	Repository *ModuleSourceChartRepository `json:"repository,omitempty"`
+	Git        *ModuleSourceChartGit        `json:"git,omitempty"`
+}
+
+type ModuleSourceExistingHelmReleaseRef struct {
+	Name        string               `json:"name" validate:"required,dns1123subdomain"`
+	Namespace   string               `json:"namespace" validate:"required,dns1123label"`
+	ChartSource ModuleSourceChartRef `json:"chartSource"`
+	Values      map[string]any       `json:"values,omitempty"`
+}
+
 type ModuleSource struct {
-	Raw     *string `json:"raw" validate:"omitempty,yaml"`
-	HttpURL *string `json:"httpURL" validate:"omitempty,http_url"`
+	Raw                 *string                             `json:"raw,omitempty" validate:"omitempty,yaml"`
+	HttpURL             *string                             `json:"httpURL,omitempty" validate:"omitempty,http_url"`
+	ConfigMap           *ModuleSourceConfigMapRef           `json:"configMap,omitempty"`
+	ExistingHelmRelease *ModuleSourceExistingHelmReleaseRef `json:"existingHelmRelease,omitempty"`
 }
 
 type CreateModuleRequest struct {
@@ -53,9 +86,24 @@ func (h ModuleHandler) CreateHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if requestData.Source.HttpURL == nil && requestData.Source.Raw == nil {
+	// Validate that at least one source is provided
+	sourceCount := 0
+	if requestData.Source.Raw != nil {
+		sourceCount++
+	}
+	if requestData.Source.HttpURL != nil {
+		sourceCount++
+	}
+	if requestData.Source.ConfigMap != nil {
+		sourceCount++
+	}
+	if requestData.Source.ExistingHelmRelease != nil {
+		sourceCount++
+	}
+
+	if sourceCount == 0 {
 		response.JSONBodyValidationError(w, map[string]string{
-			"CreateModuleRequest.source": "At least one of 'raw' or 'httpURL' must be provided.",
+			"CreateModuleRequest.source": "At least one source must be provided: raw, httpURL, configMap, or existingHelmRelease.",
 		})
 		return
 	}
@@ -65,6 +113,52 @@ func (h ModuleHandler) CreateHandle(w http.ResponseWriter, r *http.Request) {
 		sourceRawBytes = []byte(*requestData.Source.Raw)
 	}
 
+	moduleSource := forkspacer.ModuleSource{
+		Raw:     sourceRawBytes,
+		HttpURL: requestData.Source.HttpURL,
+	}
+
+	if requestData.Source.ConfigMap != nil {
+		moduleSource.ConfigMap = &forkspacer.ModuleSourceConfigMapRef{
+			Name:      requestData.Source.ConfigMap.Name,
+			Namespace: requestData.Source.ConfigMap.Namespace,
+			Key:       requestData.Source.ConfigMap.Key,
+		}
+	}
+
+	if requestData.Source.ExistingHelmRelease != nil {
+		moduleSource.ExistingHelmRelease = &forkspacer.ModuleSourceExistingHelmReleaseRef{
+			Name:      requestData.Source.ExistingHelmRelease.Name,
+			Namespace: requestData.Source.ExistingHelmRelease.Namespace,
+			Values:    requestData.Source.ExistingHelmRelease.Values,
+		}
+
+		// Set chart source
+		if requestData.Source.ExistingHelmRelease.ChartSource.ConfigMap != nil {
+			moduleSource.ExistingHelmRelease.ChartSource.ConfigMap = &forkspacer.ModuleSourceConfigMapRef{
+				Name:      requestData.Source.ExistingHelmRelease.ChartSource.ConfigMap.Name,
+				Namespace: requestData.Source.ExistingHelmRelease.ChartSource.ConfigMap.Namespace,
+				Key:       requestData.Source.ExistingHelmRelease.ChartSource.ConfigMap.Key,
+			}
+		}
+
+		if requestData.Source.ExistingHelmRelease.ChartSource.Repository != nil {
+			moduleSource.ExistingHelmRelease.ChartSource.Repository = &forkspacer.ModuleSourceChartRepository{
+				URL:     requestData.Source.ExistingHelmRelease.ChartSource.Repository.URL,
+				Chart:   requestData.Source.ExistingHelmRelease.ChartSource.Repository.Chart,
+				Version: requestData.Source.ExistingHelmRelease.ChartSource.Repository.Version,
+			}
+		}
+
+		if requestData.Source.ExistingHelmRelease.ChartSource.Git != nil {
+			moduleSource.ExistingHelmRelease.ChartSource.Git = &forkspacer.ModuleSourceChartGit{
+				Repo:     requestData.Source.ExistingHelmRelease.ChartSource.Git.Repo,
+				Path:     requestData.Source.ExistingHelmRelease.ChartSource.Git.Path,
+				Revision: requestData.Source.ExistingHelmRelease.ChartSource.Git.Revision,
+			}
+		}
+	}
+
 	module, err := h.forkspacerModuleService.Create(r.Context(), forkspacer.ModuleCreateIn{
 		Name:      requestData.Name,
 		Namespace: requestData.Namespace,
@@ -72,10 +166,7 @@ func (h ModuleHandler) CreateHandle(w http.ResponseWriter, r *http.Request) {
 			Name:      requestData.Workspace.Name,
 			Namespace: requestData.Workspace.Namespace,
 		},
-		Source: forkspacer.ModuleSource{
-			Raw:     sourceRawBytes,
-			HttpURL: requestData.Source.HttpURL,
-		},
+		Source:     moduleSource,
 		Config:     requestData.Config,
 		Hibernated: requestData.Hibernated,
 	})
@@ -209,10 +300,7 @@ func (h ModuleHandler) ListHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i, module := range moduleList.Items {
-		hibernated := false
-		if module.Spec.Hibernated != nil {
-			hibernated = *module.Spec.Hibernated
-		}
+		hibernated := module.Spec.Hibernated
 
 		message := ""
 		if module.Status.Message != nil {

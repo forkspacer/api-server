@@ -169,6 +169,7 @@ type WorkspaceResourceReference struct {
 type WorkspaceConnection struct {
 	Type   string                      `json:"type" validate:"required,oneof=kubeconfig in-cluster"`
 	Secret *WorkspaceResourceReference `json:"secret,omitempty" validate:"required_if=Type kubeconfig"`
+	Key    *string                     `json:"key,omitempty" validate:"omitempty,min=1"`
 }
 
 type WorkspaceAutoHibernation struct {
@@ -177,13 +178,22 @@ type WorkspaceAutoHibernation struct {
 	WakeSchedule *string `json:"wakeSchedule,omitempty" validate:"omitempty,cron"`
 }
 
+type ManagedCluster struct {
+	Backend *string `json:"backend,omitempty" validate:"omitempty,oneof=vcluster k3d kind"`
+	Distro  *string `json:"distro,omitempty" validate:"omitempty,oneof=k3s k0s k8s eks"`
+}
+
 type CreateWorkspaceRequest struct {
 	Name            string                      `json:"name" validate:"required,dns1123subdomain"`
 	Namespace       *string                     `json:"namespace,omitempty" validate:"omitempty,dns1123label"`
+	Type            *string                     `json:"type,omitempty" validate:"omitempty,oneof=kubernetes managed"`
 	From            *WorkspaceResourceReference `json:"from,omitempty"`
 	Hibernated      bool                        `json:"hibernated"`
 	Connection      *WorkspaceConnection        `json:"connection" validate:"required"`
+	ManagedCluster  *ManagedCluster             `json:"managedCluster,omitempty"`
 	AutoHibernation *WorkspaceAutoHibernation   `json:"autoHibernation,omitempty"`
+	NamespacePrefix *string                     `json:"namespacePrefix,omitempty" validate:"omitempty,min=1,max=53"`
+	CreateNamespace *bool                       `json:"createNamespace,omitempty"`
 }
 
 type WorkspaceResponse struct {
@@ -198,9 +208,12 @@ func (h WorkspaceHandler) CreateHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	workspaceIn := forkspacer.WorkspaceCreateIn{
-		Name:       requestData.Name,
-		Namespace:  requestData.Namespace,
-		Hibernated: requestData.Hibernated,
+		Name:            requestData.Name,
+		Namespace:       requestData.Namespace,
+		Type:            requestData.Type,
+		Hibernated:      requestData.Hibernated,
+		NamespacePrefix: requestData.NamespacePrefix,
+		CreateNamespace: requestData.CreateNamespace,
 	}
 
 	if requestData.From != nil {
@@ -213,12 +226,20 @@ func (h WorkspaceHandler) CreateHandle(w http.ResponseWriter, r *http.Request) {
 	if requestData.Connection != nil {
 		workspaceIn.Connection = &forkspacer.WorkspaceCreateConnectionIn{
 			Type: requestData.Connection.Type,
+			Key:  requestData.Connection.Key,
 		}
 		if requestData.Connection.Secret != nil {
 			workspaceIn.Connection.Secret = &forkspacer.ResourceReference{
 				Name:      requestData.Connection.Secret.Name,
 				Namespace: requestData.Connection.Secret.Namespace,
 			}
+		}
+	}
+
+	if requestData.ManagedCluster != nil {
+		workspaceIn.ManagedCluster = &forkspacer.ManagedClusterIn{
+			Backend: requestData.ManagedCluster.Backend,
+			Distro:  requestData.ManagedCluster.Distro,
 		}
 	}
 
@@ -252,6 +273,9 @@ type UpdateWorkspaceRequest struct {
 	Namespace       *string                   `json:"namespace,omitempty" validate:"omitempty,dns1123label"`
 	Hibernated      *bool                     `json:"hibernated,omitempty"`
 	AutoHibernation *WorkspaceAutoHibernation `json:"autoHibernation,omitempty"`
+	ManagedCluster  *ManagedCluster           `json:"managedCluster,omitempty"`
+	NamespacePrefix *string                   `json:"namespacePrefix,omitempty" validate:"omitempty,min=1,max=53"`
+	CreateNamespace *bool                     `json:"createNamespace,omitempty"`
 }
 
 func (h WorkspaceHandler) UpdateHandle(w http.ResponseWriter, r *http.Request) {
@@ -261,9 +285,11 @@ func (h WorkspaceHandler) UpdateHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updateIn := forkspacer.WorkspaceUpdateIn{
-		Name:       requestData.Name,
-		Namespace:  requestData.Namespace,
-		Hibernated: requestData.Hibernated,
+		Name:            requestData.Name,
+		Namespace:       requestData.Namespace,
+		Hibernated:      requestData.Hibernated,
+		NamespacePrefix: requestData.NamespacePrefix,
+		CreateNamespace: requestData.CreateNamespace,
 	}
 
 	if requestData.AutoHibernation != nil {
@@ -271,6 +297,13 @@ func (h WorkspaceHandler) UpdateHandle(w http.ResponseWriter, r *http.Request) {
 			Enabled:      requestData.AutoHibernation.Enabled,
 			Schedule:     requestData.AutoHibernation.Schedule,
 			WakeSchedule: requestData.AutoHibernation.WakeSchedule,
+		}
+	}
+
+	if requestData.ManagedCluster != nil {
+		updateIn.ManagedCluster = &forkspacer.ManagedClusterIn{
+			Backend: requestData.ManagedCluster.Backend,
+			Distro:  requestData.ManagedCluster.Distro,
 		}
 	}
 
@@ -369,10 +402,7 @@ func (h WorkspaceHandler) ListHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i, workspace := range workspaceList.Items {
-		hibernated := false
-		if workspace.Spec.Hibernated != nil {
-			hibernated = *workspace.Spec.Hibernated
-		}
+		hibernated := workspace.Spec.Hibernated
 
 		if workspace.Status.Message == nil {
 			workspace.Status.Message = utils.ToPtr("")
