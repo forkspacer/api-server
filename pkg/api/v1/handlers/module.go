@@ -103,7 +103,8 @@ func (h ModuleHandler) CreateHandle(w http.ResponseWriter, r *http.Request) {
 
 	if sourceCount == 0 {
 		response.JSONBodyValidationError(w, map[string]string{
-			"CreateModuleRequest.source": "At least one source must be provided: raw, httpURL, configMap, or existingHelmRelease.",
+			"CreateModuleRequest.source": "At least one source must be provided: " +
+				"raw, httpURL, configMap, or existingHelmRelease.",
 		})
 		return
 	}

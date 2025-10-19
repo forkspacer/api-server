@@ -166,22 +166,24 @@ func (s ForkspacerModuleService) Create(ctx context.Context, moduleIn ModuleCrea
 
 		// Set chart source
 		if moduleIn.Source.ExistingHelmRelease.ChartSource.ConfigMap != nil {
+			srcCfgMap := moduleIn.Source.ExistingHelmRelease.ChartSource.ConfigMap
 			module.Spec.Source.ExistingHelmRelease.ChartSource.ConfigMap = &batchv1.ModuleSourceConfigMapRef{
-				Name:      moduleIn.Source.ExistingHelmRelease.ChartSource.ConfigMap.Name,
-				Namespace: moduleIn.Source.ExistingHelmRelease.ChartSource.ConfigMap.Namespace,
+				Name:      srcCfgMap.Name,
+				Namespace: srcCfgMap.Namespace,
 			}
-			if moduleIn.Source.ExistingHelmRelease.ChartSource.ConfigMap.Key != nil {
-				module.Spec.Source.ExistingHelmRelease.ChartSource.ConfigMap.Key = *moduleIn.Source.ExistingHelmRelease.ChartSource.ConfigMap.Key
+			if srcCfgMap.Key != nil {
+				module.Spec.Source.ExistingHelmRelease.ChartSource.ConfigMap.Key = *srcCfgMap.Key
 			}
 		}
 
 		if moduleIn.Source.ExistingHelmRelease.ChartSource.Repository != nil {
+			srcRepo := moduleIn.Source.ExistingHelmRelease.ChartSource.Repository
 			module.Spec.Source.ExistingHelmRelease.ChartSource.Repository = &batchv1.ModuleSourceChartRepository{
-				URL:   moduleIn.Source.ExistingHelmRelease.ChartSource.Repository.URL,
-				Chart: moduleIn.Source.ExistingHelmRelease.ChartSource.Repository.Chart,
+				URL:   srcRepo.URL,
+				Chart: srcRepo.Chart,
 			}
-			if moduleIn.Source.ExistingHelmRelease.ChartSource.Repository.Version != nil {
-				module.Spec.Source.ExistingHelmRelease.ChartSource.Repository.Version = moduleIn.Source.ExistingHelmRelease.ChartSource.Repository.Version
+			if srcRepo.Version != nil {
+				module.Spec.Source.ExistingHelmRelease.ChartSource.Repository.Version = srcRepo.Version
 			}
 		}
 
