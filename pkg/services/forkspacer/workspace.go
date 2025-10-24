@@ -133,8 +133,6 @@ type WorkspaceCreateIn struct {
 	Connection      *WorkspaceCreateConnectionIn
 	ManagedCluster  *ManagedClusterIn
 	AutoHibernation *WorkspaceAutoHibernationIn
-	NamespacePrefix *string
-	CreateNamespace *bool
 }
 
 func (s ForkspacerWorkspaceService) Create(
@@ -197,14 +195,6 @@ func (s ForkspacerWorkspaceService) Create(
 		}
 	}
 
-	if workspaceIn.NamespacePrefix != nil {
-		workspace.Spec.NamespacePrefix = *workspaceIn.NamespacePrefix
-	}
-
-	if workspaceIn.CreateNamespace != nil {
-		workspace.Spec.CreateNamespace = *workspaceIn.CreateNamespace
-	}
-
 	return workspace, s.client.Create(ctx, workspace)
 }
 
@@ -248,8 +238,6 @@ type WorkspaceUpdateIn struct {
 	Hibernated      *bool
 	AutoHibernation *WorkspaceAutoHibernationIn
 	ManagedCluster  *ManagedClusterIn
-	NamespacePrefix *string
-	CreateNamespace *bool
 }
 
 func (s ForkspacerWorkspaceService) Update(
@@ -294,14 +282,6 @@ func (s ForkspacerWorkspaceService) Update(
 				if updateIn.ManagedCluster.Distro != nil {
 					workspace.Spec.ManagedCluster.Distro = *updateIn.ManagedCluster.Distro
 				}
-			}
-
-			if updateIn.NamespacePrefix != nil {
-				workspace.Spec.NamespacePrefix = *updateIn.NamespacePrefix
-			}
-
-			if updateIn.CreateNamespace != nil {
-				workspace.Spec.CreateNamespace = *updateIn.CreateNamespace
 			}
 
 			return s.client.Update(ctx, workspace)

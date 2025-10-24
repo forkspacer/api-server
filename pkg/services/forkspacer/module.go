@@ -12,7 +12,6 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/yaml"
 )
 
 type ForkspacerModuleService struct {
@@ -41,70 +40,20 @@ func NewForkspacerModuleService() (*ForkspacerModuleService, error) {
 	return &ForkspacerModuleService{client: ctrlClient}, nil
 }
 
-type ModuleSourceConfigMapRef struct {
-	Name      string
-	Namespace string
-	Key       *string
-}
-
-type ModuleSourceChartRepository struct {
-	URL     string
-	Chart   string
-	Version *string
-}
-
-type ModuleSourceChartGit struct {
-	Repo     string
-	Path     string
-	Revision string
-}
-
-type ModuleSourceChartRef struct {
-	ConfigMap  *ModuleSourceConfigMapRef
-	Repository *ModuleSourceChartRepository
-	Git        *ModuleSourceChartGit
-}
-
-type ModuleSourceExistingHelmReleaseRef struct {
-	Name        string
-	Namespace   string
-	ChartSource ModuleSourceChartRef
-	Values      map[string]any
-}
-
-type ModuleSource struct {
-	Raw                 []byte
-	HttpURL             *string
-	ConfigMap           *ModuleSourceConfigMapRef
-	ExistingHelmRelease *ModuleSourceExistingHelmReleaseRef
-}
-
 type ModuleCreateIn struct {
-	Name       string
-	Namespace  *string
-	Workspace  ResourceReference
-	Source     ModuleSource
-	Config     map[string]any
-	Hibernated bool
+	Name         string
+	Namespace    *string
+	Workspace    ResourceReference
+	Helm         *batchv1.ModuleSpecHelm
+	Custom       *batchv1.ModuleSpecCustom
+	Config       map[string]any
+	ConfigSchema []batchv1.ConfigItem
+	Hibernated   bool
 }
 
 func (s ForkspacerModuleService) Create(ctx context.Context, moduleIn ModuleCreateIn) (*batchv1.Module, error) {
-	config, err := json.Marshal(moduleIn.Config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal config: %w", err)
-	}
-
 	if moduleIn.Namespace == nil {
 		moduleIn.Namespace = utils.ToPtr("default")
-	}
-
-	// Convert YAML bytes to JSON for RawExtension
-	var sourceRawJSON []byte
-	if moduleIn.Source.Raw != nil {
-		sourceRawJSON, err = yaml.YAMLToJSON(moduleIn.Source.Raw)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert YAML to JSON for source.raw: %w", err)
-		}
 	}
 
 	module := &batchv1.Module{
@@ -112,87 +61,26 @@ func (s ForkspacerModuleService) Create(ctx context.Context, moduleIn ModuleCrea
 			Name:      moduleIn.Name,
 			Namespace: *moduleIn.Namespace,
 		},
+		Config: moduleIn.ConfigSchema,
 		Spec: batchv1.ModuleSpec{
 			Workspace: batchv1.ModuleWorkspaceReference{
 				Name:      moduleIn.Workspace.Name,
 				Namespace: moduleIn.Workspace.Namespace,
 			},
-			Source: batchv1.ModuleSource{},
-			Config: &runtime.RawExtension{
-				Raw: config,
-			},
+			Helm:       moduleIn.Helm,
+			Custom:     moduleIn.Custom,
 			Hibernated: moduleIn.Hibernated,
 		},
 	}
 
-	// Set source fields
-	if moduleIn.Source.Raw != nil {
-		module.Spec.Source.Raw = &runtime.RawExtension{
-			Raw: sourceRawJSON,
-		}
-	}
-
-	if moduleIn.Source.HttpURL != nil {
-		module.Spec.Source.HttpURL = moduleIn.Source.HttpURL
-	}
-
-	if moduleIn.Source.ConfigMap != nil {
-		module.Spec.Source.ConfigMap = &batchv1.ModuleSourceConfigMapRef{
-			Name:      moduleIn.Source.ConfigMap.Name,
-			Namespace: moduleIn.Source.ConfigMap.Namespace,
-		}
-		if moduleIn.Source.ConfigMap.Key != nil {
-			module.Spec.Source.ConfigMap.Key = *moduleIn.Source.ConfigMap.Key
-		}
-	}
-
-	if moduleIn.Source.ExistingHelmRelease != nil {
-		valuesJSON, err := json.Marshal(moduleIn.Source.ExistingHelmRelease.Values)
+	// Marshal and set config values if provided
+	if moduleIn.Config != nil {
+		configJSON, err := json.Marshal(moduleIn.Config)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal existingHelmRelease values: %w", err)
+			return nil, fmt.Errorf("failed to marshal config: %w", err)
 		}
-
-		module.Spec.Source.ExistingHelmRelease = &batchv1.ModuleSourceExistingHelmReleaseRef{
-			Name:        moduleIn.Source.ExistingHelmRelease.Name,
-			Namespace:   moduleIn.Source.ExistingHelmRelease.Namespace,
-			ChartSource: batchv1.ModuleSourceChartRef{},
-		}
-
-		if moduleIn.Source.ExistingHelmRelease.Values != nil {
-			module.Spec.Source.ExistingHelmRelease.Values = &runtime.RawExtension{
-				Raw: valuesJSON,
-			}
-		}
-
-		// Set chart source
-		if moduleIn.Source.ExistingHelmRelease.ChartSource.ConfigMap != nil {
-			srcCfgMap := moduleIn.Source.ExistingHelmRelease.ChartSource.ConfigMap
-			module.Spec.Source.ExistingHelmRelease.ChartSource.ConfigMap = &batchv1.ModuleSourceConfigMapRef{
-				Name:      srcCfgMap.Name,
-				Namespace: srcCfgMap.Namespace,
-			}
-			if srcCfgMap.Key != nil {
-				module.Spec.Source.ExistingHelmRelease.ChartSource.ConfigMap.Key = *srcCfgMap.Key
-			}
-		}
-
-		if moduleIn.Source.ExistingHelmRelease.ChartSource.Repository != nil {
-			srcRepo := moduleIn.Source.ExistingHelmRelease.ChartSource.Repository
-			module.Spec.Source.ExistingHelmRelease.ChartSource.Repository = &batchv1.ModuleSourceChartRepository{
-				URL:   srcRepo.URL,
-				Chart: srcRepo.Chart,
-			}
-			if srcRepo.Version != nil {
-				module.Spec.Source.ExistingHelmRelease.ChartSource.Repository.Version = srcRepo.Version
-			}
-		}
-
-		if moduleIn.Source.ExistingHelmRelease.ChartSource.Git != nil {
-			module.Spec.Source.ExistingHelmRelease.ChartSource.Git = &batchv1.ModuleSourceChartGit{
-				Repo:     moduleIn.Source.ExistingHelmRelease.ChartSource.Git.Repo,
-				Path:     moduleIn.Source.ExistingHelmRelease.ChartSource.Git.Path,
-				Revision: moduleIn.Source.ExistingHelmRelease.ChartSource.Git.Revision,
-			}
+		module.Spec.Config = &runtime.RawExtension{
+			Raw: configJSON,
 		}
 	}
 

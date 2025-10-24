@@ -192,8 +192,6 @@ type CreateWorkspaceRequest struct {
 	Connection      *WorkspaceConnection        `json:"connection" validate:"required"`
 	ManagedCluster  *ManagedCluster             `json:"managedCluster,omitempty"`
 	AutoHibernation *WorkspaceAutoHibernation   `json:"autoHibernation,omitempty"`
-	NamespacePrefix *string                     `json:"namespacePrefix,omitempty" validate:"omitempty,min=1,max=53"`
-	CreateNamespace *bool                       `json:"createNamespace,omitempty"`
 }
 
 type WorkspaceResponse struct {
@@ -208,12 +206,10 @@ func (h WorkspaceHandler) CreateHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	workspaceIn := forkspacer.WorkspaceCreateIn{
-		Name:            requestData.Name,
-		Namespace:       requestData.Namespace,
-		Type:            requestData.Type,
-		Hibernated:      requestData.Hibernated,
-		NamespacePrefix: requestData.NamespacePrefix,
-		CreateNamespace: requestData.CreateNamespace,
+		Name:       requestData.Name,
+		Namespace:  requestData.Namespace,
+		Type:       requestData.Type,
+		Hibernated: requestData.Hibernated,
 	}
 
 	if requestData.From != nil {
@@ -274,8 +270,6 @@ type UpdateWorkspaceRequest struct {
 	Hibernated      *bool                     `json:"hibernated,omitempty"`
 	AutoHibernation *WorkspaceAutoHibernation `json:"autoHibernation,omitempty"`
 	ManagedCluster  *ManagedCluster           `json:"managedCluster,omitempty"`
-	NamespacePrefix *string                   `json:"namespacePrefix,omitempty" validate:"omitempty,min=1,max=53"`
-	CreateNamespace *bool                     `json:"createNamespace,omitempty"`
 }
 
 func (h WorkspaceHandler) UpdateHandle(w http.ResponseWriter, r *http.Request) {
@@ -285,11 +279,9 @@ func (h WorkspaceHandler) UpdateHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updateIn := forkspacer.WorkspaceUpdateIn{
-		Name:            requestData.Name,
-		Namespace:       requestData.Namespace,
-		Hibernated:      requestData.Hibernated,
-		NamespacePrefix: requestData.NamespacePrefix,
-		CreateNamespace: requestData.CreateNamespace,
+		Name:       requestData.Name,
+		Namespace:  requestData.Namespace,
+		Hibernated: requestData.Hibernated,
 	}
 
 	if requestData.AutoHibernation != nil {

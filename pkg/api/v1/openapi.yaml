@@ -16,31 +16,31 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateWorkspaceRequest'
+              $ref: "#/components/schemas/CreateWorkspaceRequest"
       responses:
-        '201':
+        "201":
           description: Workspace created successfully
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/Response'
+                  - $ref: "#/components/schemas/Response"
                   - type: object
                     properties:
                       success:
                         allOf:
-                          - $ref: '#/components/schemas/JSONSuccessResponse'
+                          - $ref: "#/components/schemas/JSONSuccessResponse"
                           - type: object
                             properties:
                               code:
                                 type: string
                                 enum: [created]
                               data:
-                                $ref: '#/components/schemas/WorkspaceResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '415':
-          $ref: '#/components/responses/UnsupportedMediaType'
+                                $ref: "#/components/schemas/WorkspaceResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
     patch:
       summary: Update an existing workspace
       operationId: updateWorkspace
@@ -49,31 +49,31 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateWorkspaceRequest'
+              $ref: "#/components/schemas/UpdateWorkspaceRequest"
       responses:
-        '200':
+        "200":
           description: Workspace updated successfully
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/Response'
+                  - $ref: "#/components/schemas/Response"
                   - type: object
                     properties:
                       success:
                         allOf:
-                          - $ref: '#/components/schemas/JSONSuccessResponse'
+                          - $ref: "#/components/schemas/JSONSuccessResponse"
                           - type: object
                             properties:
                               code:
                                 type: string
                                 enum: [ok]
                               data:
-                                $ref: '#/components/schemas/WorkspaceResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '415':
-          $ref: '#/components/responses/UnsupportedMediaType'
+                                $ref: "#/components/schemas/WorkspaceResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
     delete:
       summary: Delete a workspace
       operationId: deleteWorkspace
@@ -82,14 +82,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DeleteWorkspaceRequest'
+              $ref: "#/components/schemas/DeleteWorkspaceRequest"
       responses:
-        '204':
+        "204":
           description: Workspace deleted successfully
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '415':
-          $ref: '#/components/responses/UnsupportedMediaType'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
   /workspace/list:
     get:
       summary: List workspaces
@@ -110,27 +110,27 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: List of workspaces
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/Response'
+                  - $ref: "#/components/schemas/Response"
                   - type: object
                     properties:
                       success:
                         allOf:
-                          - $ref: '#/components/schemas/JSONSuccessResponse'
+                          - $ref: "#/components/schemas/JSONSuccessResponse"
                           - type: object
                             properties:
                               code:
                                 type: string
                                 enum: [ok]
                               data:
-                                $ref: '#/components/schemas/ListWorkspacesResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                                $ref: "#/components/schemas/ListWorkspacesResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
   /workspace/connection/kubeconfig/:
     post:
       summary: Create a kubeconfig secret
@@ -155,31 +155,31 @@ paths:
                   format: binary
                   description: Kubeconfig file (max 10 MB)
       responses:
-        '201':
+        "201":
           description: Kubeconfig secret created successfully
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/Response'
+                  - $ref: "#/components/schemas/Response"
                   - type: object
                     properties:
                       success:
                         allOf:
-                          - $ref: '#/components/schemas/JSONSuccessResponse'
+                          - $ref: "#/components/schemas/JSONSuccessResponse"
                           - type: object
                             properties:
                               code:
                                 type: string
                                 enum: [created]
                               data:
-                                $ref: '#/components/schemas/KubeconfigSecretResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '413':
-          $ref: '#/components/responses/FormDataTooLarge'
-        '415':
-          $ref: '#/components/responses/UnsupportedMediaType'
+                                $ref: "#/components/schemas/KubeconfigSecretResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "413":
+          $ref: "#/components/responses/FormDataTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
     delete:
       summary: Delete a kubeconfig secret
       operationId: deleteKubeconfigSecret
@@ -188,14 +188,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DeleteKubeconfigSecretRequest'
+              $ref: "#/components/schemas/DeleteKubeconfigSecretRequest"
       responses:
-        '204':
+        "204":
           description: Kubeconfig secret deleted successfully
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '415':
-          $ref: '#/components/responses/UnsupportedMediaType'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
   /workspace/connection/kubeconfig/list:
     get:
       summary: List kubeconfig secrets
@@ -216,27 +216,27 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: List of kubeconfig secrets
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/Response'
+                  - $ref: "#/components/schemas/Response"
                   - type: object
                     properties:
                       success:
                         allOf:
-                          - $ref: '#/components/schemas/JSONSuccessResponse'
+                          - $ref: "#/components/schemas/JSONSuccessResponse"
                           - type: object
                             properties:
                               code:
                                 type: string
                                 enum: [ok]
                               data:
-                                $ref: '#/components/schemas/ListKubeconfigSecretsResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                                $ref: "#/components/schemas/ListKubeconfigSecretsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
   /module/:
     post:
       summary: Create a new module
@@ -246,31 +246,31 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateModuleRequest'
+              $ref: "#/components/schemas/CreateModuleRequest"
       responses:
-        '201':
+        "201":
           description: Module created successfully
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/Response'
+                  - $ref: "#/components/schemas/Response"
                   - type: object
                     properties:
                       success:
                         allOf:
-                          - $ref: '#/components/schemas/JSONSuccessResponse'
+                          - $ref: "#/components/schemas/JSONSuccessResponse"
                           - type: object
                             properties:
                               code:
                                 type: string
                                 enum: [created]
                               data:
-                                $ref: '#/components/schemas/ModuleResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '415':
-          $ref: '#/components/responses/UnsupportedMediaType'
+                                $ref: "#/components/schemas/ModuleResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
     patch:
       summary: Update an existing module
       operationId: updateModule
@@ -279,31 +279,31 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateModuleRequest'
+              $ref: "#/components/schemas/UpdateModuleRequest"
       responses:
-        '200':
+        "200":
           description: Module updated successfully
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/Response'
+                  - $ref: "#/components/schemas/Response"
                   - type: object
                     properties:
                       success:
                         allOf:
-                          - $ref: '#/components/schemas/JSONSuccessResponse'
+                          - $ref: "#/components/schemas/JSONSuccessResponse"
                           - type: object
                             properties:
                               code:
                                 type: string
                                 enum: [ok]
                               data:
-                                $ref: '#/components/schemas/ModuleResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '415':
-          $ref: '#/components/responses/UnsupportedMediaType'
+                                $ref: "#/components/schemas/ModuleResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
     delete:
       summary: Delete a module
       operationId: deleteModule
@@ -312,14 +312,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DeleteModuleRequest'
+              $ref: "#/components/schemas/DeleteModuleRequest"
       responses:
-        '204':
+        "204":
           description: Module deleted successfully
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '415':
-          $ref: '#/components/responses/UnsupportedMediaType'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
   /module/list:
     get:
       summary: List modules
@@ -340,36 +340,36 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: List of modules
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/Response'
+                  - $ref: "#/components/schemas/Response"
                   - type: object
                     properties:
                       success:
                         allOf:
-                          - $ref: '#/components/schemas/JSONSuccessResponse'
+                          - $ref: "#/components/schemas/JSONSuccessResponse"
                           - type: object
                             properties:
                               code:
                                 type: string
                                 enum: [ok]
                               data:
-                                $ref: '#/components/schemas/ListModulesResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                                $ref: "#/components/schemas/ListModulesResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
 components:
   schemas:
     Response:
       type: object
       properties:
         success:
-          $ref: '#/components/schemas/JSONSuccessResponse'
+          $ref: "#/components/schemas/JSONSuccessResponse"
         error:
-          $ref: '#/components/schemas/JSONErrorResponse'
+          $ref: "#/components/schemas/JSONErrorResponse"
     JSONSuccessResponse:
       type: object
       required:
@@ -411,7 +411,7 @@ components:
           description: DNS 1123 subdomain
         namespace:
           type: string
-          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
           maxLength: 63
           description: DNS 1123 label
     WorkspaceConnection:
@@ -423,7 +423,7 @@ components:
           type: string
           enum: [kubeconfig, in-cluster]
         secret:
-          $ref: '#/components/schemas/WorkspaceResourceReference'
+          $ref: "#/components/schemas/WorkspaceResourceReference"
         key:
           type: string
           minLength: 1
@@ -467,7 +467,7 @@ components:
           description: DNS 1123 subdomain
         namespace:
           type: string
-          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
           maxLength: 63
           description: DNS 1123 label
         type:
@@ -476,25 +476,15 @@ components:
           default: kubernetes
           description: Workspace type
         from:
-          $ref: '#/components/schemas/WorkspaceResourceReference'
+          $ref: "#/components/schemas/WorkspaceResourceReference"
         hibernated:
           type: boolean
         connection:
-          $ref: '#/components/schemas/WorkspaceConnection'
+          $ref: "#/components/schemas/WorkspaceConnection"
         managedCluster:
-          $ref: '#/components/schemas/ManagedCluster'
+          $ref: "#/components/schemas/ManagedCluster"
         autoHibernation:
-          $ref: '#/components/schemas/WorkspaceAutoHibernation'
-        namespacePrefix:
-          type: string
-          pattern: '^[a-z0-9][-a-z0-9]*$'
-          minLength: 1
-          maxLength: 53
-          description: Prefix for all module deployment namespaces
-        createNamespace:
-          type: boolean
-          default: false
-          description: Auto-create prefixed namespaces (requires namespacePrefix)
+          $ref: "#/components/schemas/WorkspaceAutoHibernation"
     UpdateWorkspaceRequest:
       type: object
       required:
@@ -507,24 +497,15 @@ components:
           description: DNS 1123 subdomain
         namespace:
           type: string
-          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
           maxLength: 63
           description: DNS 1123 label
         hibernated:
           type: boolean
         autoHibernation:
-          $ref: '#/components/schemas/WorkspaceAutoHibernation'
+          $ref: "#/components/schemas/WorkspaceAutoHibernation"
         managedCluster:
-          $ref: '#/components/schemas/ManagedCluster'
-        namespacePrefix:
-          type: string
-          pattern: '^[a-z0-9][-a-z0-9]*$'
-          minLength: 1
-          maxLength: 53
-          description: Prefix for all module deployment namespaces
-        createNamespace:
-          type: boolean
-          description: Auto-create prefixed namespaces (requires namespacePrefix)
+          $ref: "#/components/schemas/ManagedCluster"
     DeleteWorkspaceRequest:
       type: object
       required:
@@ -537,7 +518,7 @@ components:
           description: DNS 1123 subdomain
         namespace:
           type: string
-          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
           maxLength: 63
           description: DNS 1123 label
     ListWorkspacesRequest:
@@ -594,7 +575,7 @@ components:
         workspaces:
           type: array
           items:
-            $ref: '#/components/schemas/WorkspaceListItem'
+            $ref: "#/components/schemas/WorkspaceListItem"
     KubeconfigSecretResponse:
       type: object
       required:
@@ -637,7 +618,7 @@ components:
         secrets:
           type: array
           items:
-            $ref: '#/components/schemas/KubeconfigSecretResponse'
+            $ref: "#/components/schemas/KubeconfigSecretResponse"
     WorkspaceReference:
       type: object
       required:
@@ -651,10 +632,11 @@ components:
           description: DNS 1123 subdomain
         namespace:
           type: string
-          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
           maxLength: 63
           description: DNS 1123 label
-    ModuleSourceConfigMapRef:
+    # Helm Module Schemas
+    ModuleSpecHelmChartRepoAuth:
       type: object
       required:
         - name
@@ -667,14 +649,10 @@ components:
           description: DNS 1123 subdomain
         namespace:
           type: string
-          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
           maxLength: 63
           description: DNS 1123 label
-        key:
-          type: string
-          minLength: 1
-          description: Key in the ConfigMap to retrieve
-    ModuleSourceChartRepository:
+    ModuleSpecHelmChartRepo:
       type: object
       required:
         - url
@@ -690,8 +668,52 @@ components:
           description: Chart name
         version:
           type: string
-          description: Chart version (optional)
-    ModuleSourceChartGit:
+          description: Chart version
+        auth:
+          $ref: "#/components/schemas/ModuleSpecHelmChartRepoAuth"
+    ModuleSpecHelmChartConfigMap:
+      type: object
+      required:
+        - name
+        - namespace
+        - key
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
+          description: DNS 1123 subdomain
+        namespace:
+          type: string
+          pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+          maxLength: 63
+          description: DNS 1123 label
+        key:
+          type: string
+          minLength: 1
+          default: chart.tgz
+    ModuleSpecHelmChartGitAuthSecret:
+      type: object
+      required:
+        - name
+        - namespace
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
+          description: DNS 1123 subdomain
+        namespace:
+          type: string
+          pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+          maxLength: 63
+          description: DNS 1123 label
+    ModuleSpecHelmChartGitAuth:
+      type: object
+      properties:
+        httpsSecretRef:
+          $ref: "#/components/schemas/ModuleSpecHelmChartGitAuthSecret"
+    ModuleSpecHelmChartGit:
       type: object
       required:
         - repo
@@ -705,68 +727,29 @@ components:
         path:
           type: string
           minLength: 1
+          default: /
           description: Path to the chart directory containing Chart.yaml
         revision:
           type: string
           minLength: 1
           default: main
           description: Git revision (branch, tag)
-    ModuleSourceChartRef:
+        auth:
+          $ref: "#/components/schemas/ModuleSpecHelmChartGitAuth"
+    ModuleSpecHelmChart:
       type: object
       properties:
+        repo:
+          $ref: "#/components/schemas/ModuleSpecHelmChartRepo"
         configMap:
-          $ref: '#/components/schemas/ModuleSourceConfigMapRef'
-        repository:
-          $ref: '#/components/schemas/ModuleSourceChartRepository'
+          $ref: "#/components/schemas/ModuleSpecHelmChartConfigMap"
         git:
-          $ref: '#/components/schemas/ModuleSourceChartGit'
-    ModuleSourceExistingHelmReleaseRef:
+          $ref: "#/components/schemas/ModuleSpecHelmChartGit"
+    ModuleSpecHelmExistingRelease:
       type: object
       required:
         - name
         - namespace
-        - chartSource
-      properties:
-        name:
-          type: string
-          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
-          maxLength: 253
-          description: Name of the existing Helm release
-        namespace:
-          type: string
-          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
-          maxLength: 63
-          description: Namespace of the existing Helm release
-        chartSource:
-          $ref: '#/components/schemas/ModuleSourceChartRef'
-          description: Helm chart source for managing this release
-        values:
-          type: object
-          additionalProperties: true
-          description: Override values merged with existing release values
-    ModuleSource:
-      type: object
-      properties:
-        raw:
-          type: string
-          description: Raw YAML source
-        httpURL:
-          type: string
-          format: uri
-          description: HTTP URL to module source
-        configMap:
-          $ref: '#/components/schemas/ModuleSourceConfigMapRef'
-          description: Reference to a ConfigMap containing module source
-        existingHelmRelease:
-          $ref: '#/components/schemas/ModuleSourceExistingHelmReleaseRef'
-          description: Reference to an existing Helm release to manage
-    CreateModuleRequest:
-      type: object
-      required:
-        - name
-        - workspace
-        - source
-        - config
       properties:
         name:
           type: string
@@ -775,18 +758,294 @@ components:
           description: DNS 1123 subdomain
         namespace:
           type: string
-          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+          maxLength: 63
+          description: DNS 1123 label
+    ModuleSpecHelmValuesConfigMap:
+      type: object
+      required:
+        - name
+        - namespace
+        - key
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
+          description: DNS 1123 subdomain
+        namespace:
+          type: string
+          pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+          maxLength: 63
+          description: DNS 1123 label
+        key:
+          type: string
+          minLength: 1
+          default: values.yaml
+    ModuleSpecHelmValues:
+      type: object
+      properties:
+        file:
+          type: string
+          description: Path to values file
+        configMap:
+          $ref: "#/components/schemas/ModuleSpecHelmValuesConfigMap"
+        raw:
+          type: object
+          additionalProperties: true
+          description: Raw Helm values
+    ModuleSpecHelmOutputValueFromSecret:
+      type: object
+      required:
+        - name
+        - namespace
+        - key
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
+          description: DNS 1123 subdomain
+        namespace:
+          type: string
+          pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+          maxLength: 63
+          description: DNS 1123 label
+        key:
+          type: string
+          minLength: 1
+    ModuleSpecHelmOutputValueFrom:
+      type: object
+      properties:
+        secret:
+          $ref: "#/components/schemas/ModuleSpecHelmOutputValueFromSecret"
+    ModuleSpecHelmOutput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+        value:
+          description: Direct output value
+        valueFrom:
+          $ref: "#/components/schemas/ModuleSpecHelmOutputValueFrom"
+    ModuleSpecHelmCleanup:
+      type: object
+      properties:
+        removeNamespace:
+          type: boolean
+          default: false
+        removePVCs:
+          type: boolean
+          default: false
+    ModuleSpecHelmMigration:
+      type: object
+      properties:
+        pvcs:
+          type: array
+          items:
+            type: string
+        configMaps:
+          type: array
+          items:
+            type: string
+        secrets:
+          type: array
+          items:
+            type: string
+    ModuleSpecHelm:
+      type: object
+      required:
+        - chart
+        - namespace
+        - cleanup
+        - migration
+      properties:
+        existingRelease:
+          $ref: "#/components/schemas/ModuleSpecHelmExistingRelease"
+        chart:
+          $ref: "#/components/schemas/ModuleSpecHelmChart"
+        namespace:
+          type: string
+          pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+          maxLength: 63
+          default: default
+          description: DNS 1123 label - Namespace for Helm release
+        values:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModuleSpecHelmValues"
+        outputs:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModuleSpecHelmOutput"
+        cleanup:
+          $ref: "#/components/schemas/ModuleSpecHelmCleanup"
+        migration:
+          $ref: "#/components/schemas/ModuleSpecHelmMigration"
+    # Custom Module Schemas
+    ModuleSpecCustom:
+      type: object
+      required:
+        - image
+      properties:
+        image:
+          type: string
+          minLength: 1
+          description: Container image
+        imagePullSecrets:
+          type: array
+          items:
+            type: string
+        permissions:
+          type: array
+          items:
+            type: string
+            enum: [workspace, controller]
+    # Config Schema Types
+    ConfigItemSpecInteger:
+      type: object
+      properties:
+        required:
+          type: boolean
+          default: false
+        default:
+          type: integer
+          default: 0
+        min:
+          type: integer
+        max:
+          type: integer
+        editable:
+          type: boolean
+          default: true
+    ConfigItemSpecBoolean:
+      type: object
+      properties:
+        required:
+          type: boolean
+          default: false
+        default:
+          type: boolean
+          default: false
+        editable:
+          type: boolean
+          default: true
+    ConfigItemSpecString:
+      type: object
+      properties:
+        required:
+          type: boolean
+          default: false
+        default:
+          type: string
+          default: ""
+        regex:
+          type: string
+        editable:
+          type: boolean
+          default: true
+    ConfigItemSpecOption:
+      type: object
+      required:
+        - values
+      properties:
+        required:
+          type: boolean
+          default: false
+        default:
+          type: string
+          default: ""
+        values:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        editable:
+          type: boolean
+          default: true
+    ConfigItemSpecMultipleOptions:
+      type: object
+      required:
+        - values
+      properties:
+        required:
+          type: boolean
+          default: false
+        default:
+          type: array
+          items:
+            type: string
+        values:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        min:
+          type: integer
+        max:
+          type: integer
+        editable:
+          type: boolean
+          default: true
+    ConfigItem:
+      type: object
+      required:
+        - name
+        - alias
+      properties:
+        name:
+          type: string
+          minLength: 1
+        alias:
+          type: string
+          minLength: 1
+        integer:
+          $ref: "#/components/schemas/ConfigItemSpecInteger"
+        boolean:
+          $ref: "#/components/schemas/ConfigItemSpecBoolean"
+        string:
+          $ref: "#/components/schemas/ConfigItemSpecString"
+        option:
+          $ref: "#/components/schemas/ConfigItemSpecOption"
+        multipleOptions:
+          $ref: "#/components/schemas/ConfigItemSpecMultipleOptions"
+    CreateModuleRequest:
+      type: object
+      required:
+        - name
+        - workspace
+      properties:
+        name:
+          type: string
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
+          description: DNS 1123 subdomain
+        namespace:
+          type: string
+          pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
           maxLength: 63
           description: DNS 1123 label
         workspace:
-          $ref: '#/components/schemas/WorkspaceReference'
-        source:
-          $ref: '#/components/schemas/ModuleSource'
+          $ref: "#/components/schemas/WorkspaceReference"
+        helm:
+          $ref: "#/components/schemas/ModuleSpecHelm"
+        custom:
+          $ref: "#/components/schemas/ModuleSpecCustom"
         config:
           type: object
           additionalProperties: true
+          description: Configuration values
+        configSchema:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConfigItem"
+          description: Configuration schema definition
         hibernated:
           type: boolean
+          default: false
     UpdateModuleRequest:
       type: object
       required:
@@ -799,7 +1058,7 @@ components:
           description: DNS 1123 subdomain
         namespace:
           type: string
-          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
           maxLength: 63
           description: DNS 1123 label
         hibernated:
@@ -816,7 +1075,7 @@ components:
           description: DNS 1123 subdomain
         namespace:
           type: string
-          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+          pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
           maxLength: 63
           description: DNS 1123 label
     ListModulesRequest:
@@ -870,7 +1129,7 @@ components:
         modules:
           type: array
           items:
-            $ref: '#/components/schemas/ModuleListItem'
+            $ref: "#/components/schemas/ModuleListItem"
   responses:
     BadRequest:
       description: Bad request
@@ -878,29 +1137,35 @@ components:
         application/json:
           schema:
             allOf:
-              - $ref: '#/components/schemas/Response'
+              - $ref: "#/components/schemas/Response"
               - type: object
                 properties:
                   error:
                     allOf:
-                      - $ref: '#/components/schemas/JSONErrorResponse'
+                      - $ref: "#/components/schemas/JSONErrorResponse"
                       - type: object
                         properties:
                           code:
                             type: string
-                            enum: [bad_request, malformed_json_body, body_validation, query_validation]
+                            enum:
+                              [
+                                bad_request,
+                                malformed_json_body,
+                                body_validation,
+                                query_validation,
+                              ]
     UnsupportedMediaType:
       description: Unsupported media type
       content:
         application/json:
           schema:
             allOf:
-              - $ref: '#/components/schemas/Response'
+              - $ref: "#/components/schemas/Response"
               - type: object
                 properties:
                   error:
                     allOf:
-                      - $ref: '#/components/schemas/JSONErrorResponse'
+                      - $ref: "#/components/schemas/JSONErrorResponse"
                       - type: object
                         properties:
                           code:
@@ -914,12 +1179,12 @@ components:
         application/json:
           schema:
             allOf:
-              - $ref: '#/components/schemas/Response'
+              - $ref: "#/components/schemas/Response"
               - type: object
                 properties:
                   error:
                     allOf:
-                      - $ref: '#/components/schemas/JSONErrorResponse'
+                      - $ref: "#/components/schemas/JSONErrorResponse"
                       - type: object
                         properties:
                           code:

@@ -8,7 +8,10 @@ import (
 	"github.com/forkspacer/api-server/pkg/api/validation"
 	"github.com/forkspacer/api-server/pkg/services/forkspacer"
 	"github.com/forkspacer/api-server/pkg/utils"
+	batchv1 "github.com/forkspacer/forkspacer/api/v1"
 	"go.uber.org/zap"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type ModuleHandler struct {
@@ -28,56 +31,385 @@ type WorkspaceReference struct {
 	Namespace string `json:"namespace" validate:"required,dns1123label"`
 }
 
-type ModuleSourceConfigMapRef struct {
-	Name      string  `json:"name" validate:"required,dns1123subdomain"`
-	Namespace string  `json:"namespace" validate:"required,dns1123label"`
-	Key       *string `json:"key,omitempty" validate:"omitempty,min=1"`
+// Helm-related request types
+type ModuleSpecHelmChartRepoAuth struct {
+	Name      string `json:"name" validate:"required,dns1123subdomain"`
+	Namespace string `json:"namespace" validate:"required,dns1123label"`
 }
 
-type ModuleSourceChartRepository struct {
-	URL     string  `json:"url" validate:"required,min=1"`
-	Chart   string  `json:"chart" validate:"required,min=1"`
-	Version *string `json:"version,omitempty"`
+type ModuleSpecHelmChartRepo struct {
+	URL     string                       `json:"url" validate:"required,min=1"`
+	Chart   string                       `json:"chart" validate:"required,min=1"`
+	Version *string                      `json:"version,omitempty"`
+	Auth    *ModuleSpecHelmChartRepoAuth `json:"auth,omitempty"`
 }
 
-type ModuleSourceChartGit struct {
-	Repo     string `json:"repo" validate:"required,min=1"`
-	Path     string `json:"path" validate:"required,min=1"`
-	Revision string `json:"revision" validate:"required,min=1"`
+type ModuleSpecHelmChartConfigMap struct {
+	Name      string `json:"name" validate:"required,dns1123subdomain"`
+	Namespace string `json:"namespace" validate:"required,dns1123label"`
+	Key       string `json:"key" validate:"required,min=1"`
 }
 
-type ModuleSourceChartRef struct {
-	ConfigMap  *ModuleSourceConfigMapRef    `json:"configMap,omitempty"`
-	Repository *ModuleSourceChartRepository `json:"repository,omitempty"`
-	Git        *ModuleSourceChartGit        `json:"git,omitempty"`
+type ModuleSpecHelmChartGitAuthSecret struct {
+	Name      string `json:"name" validate:"required,dns1123subdomain"`
+	Namespace string `json:"namespace" validate:"required,dns1123label"`
 }
 
-type ModuleSourceExistingHelmReleaseRef struct {
-	Name        string               `json:"name" validate:"required,dns1123subdomain"`
-	Namespace   string               `json:"namespace" validate:"required,dns1123label"`
-	ChartSource ModuleSourceChartRef `json:"chartSource"`
-	Values      map[string]any       `json:"values,omitempty"`
+type ModuleSpecHelmChartGitAuth struct {
+	HTTPSSecretRef *ModuleSpecHelmChartGitAuthSecret `json:"httpsSecretRef,omitempty"`
 }
 
-type ModuleSource struct {
-	Raw                 *string                             `json:"raw,omitempty" validate:"omitempty,yaml"`
-	HttpURL             *string                             `json:"httpURL,omitempty" validate:"omitempty,http_url"`
-	ConfigMap           *ModuleSourceConfigMapRef           `json:"configMap,omitempty"`
-	ExistingHelmRelease *ModuleSourceExistingHelmReleaseRef `json:"existingHelmRelease,omitempty"`
+type ModuleSpecHelmChartGit struct {
+	Repo     string                      `json:"repo" validate:"required,min=1"`
+	Path     string                      `json:"path" validate:"required,min=1"`
+	Revision string                      `json:"revision" validate:"required,min=1"`
+	Auth     *ModuleSpecHelmChartGitAuth `json:"auth,omitempty"`
+}
+
+type ModuleSpecHelmChart struct {
+	Repo      *ModuleSpecHelmChartRepo      `json:"repo,omitempty"`
+	ConfigMap *ModuleSpecHelmChartConfigMap `json:"configMap,omitempty"`
+	Git       *ModuleSpecHelmChartGit       `json:"git,omitempty"`
+}
+
+type ModuleSpecHelmExistingRelease struct {
+	Name      string `json:"name" validate:"required,dns1123subdomain"`
+	Namespace string `json:"namespace" validate:"required,dns1123label"`
+}
+
+type ModuleSpecHelmValuesConfigMap struct {
+	Name      string `json:"name" validate:"required,dns1123subdomain"`
+	Namespace string `json:"namespace" validate:"required,dns1123label"`
+	Key       string `json:"key" validate:"required,min=1"`
+}
+
+type ModuleSpecHelmValues struct {
+	File      *string                        `json:"file,omitempty"`
+	ConfigMap *ModuleSpecHelmValuesConfigMap `json:"configMap,omitempty"`
+	Raw       map[string]any                 `json:"raw,omitempty"`
+}
+
+type ModuleSpecHelmOutputValueFromSecret struct {
+	Name      string `json:"name" validate:"required,dns1123subdomain"`
+	Namespace string `json:"namespace" validate:"required,dns1123label"`
+	Key       string `json:"key" validate:"required,min=1"`
+}
+
+type ModuleSpecHelmOutputValueFrom struct {
+	Secret *ModuleSpecHelmOutputValueFromSecret `json:"secret,omitempty"`
+}
+
+type ModuleSpecHelmOutput struct {
+	Name      string                         `json:"name" validate:"required,min=1"`
+	Value     any                            `json:"value,omitempty"`
+	ValueFrom *ModuleSpecHelmOutputValueFrom `json:"valueFrom,omitempty"`
+}
+
+type ModuleSpecHelmCleanup struct {
+	RemoveNamespace bool `json:"removeNamespace"`
+	RemovePVCs      bool `json:"removePVCs"`
+}
+
+type ModuleSpecHelmMigration struct {
+	PVCs       []string `json:"pvcs,omitempty"`
+	ConfigMaps []string `json:"configMaps,omitempty"`
+	Secrets    []string `json:"secrets,omitempty"`
+}
+
+type ModuleSpecHelm struct {
+	ExistingRelease *ModuleSpecHelmExistingRelease `json:"existingRelease,omitempty"`
+	Chart           ModuleSpecHelmChart            `json:"chart"`
+	Namespace       string                         `json:"namespace" validate:"required,dns1123label"`
+	Values          []ModuleSpecHelmValues         `json:"values,omitempty"`
+	Outputs         []ModuleSpecHelmOutput         `json:"outputs,omitempty"`
+	Cleanup         ModuleSpecHelmCleanup          `json:"cleanup"`
+	Migration       ModuleSpecHelmMigration        `json:"migration"`
+}
+
+// Custom module request types
+type ModuleSpecCustom struct {
+	Image            string   `json:"image" validate:"required,min=1"`
+	ImagePullSecrets []string `json:"imagePullSecrets,omitempty"`
+	Permissions      []string `json:"permissions,omitempty"`
+}
+
+// Config schema request types
+type ConfigItemSpecInteger struct {
+	Required bool `json:"required"`
+	Default  int  `json:"default"`
+	Min      *int `json:"min,omitempty"`
+	Max      *int `json:"max,omitempty"`
+	Editable bool `json:"editable"`
+}
+
+type ConfigItemSpecBoolean struct {
+	Required bool `json:"required"`
+	Default  bool `json:"default"`
+	Editable bool `json:"editable"`
+}
+
+type ConfigItemSpecString struct {
+	Required bool    `json:"required"`
+	Default  string  `json:"default"`
+	Regex    *string `json:"regex,omitempty"`
+	Editable bool    `json:"editable"`
+}
+
+type ConfigItemSpecOption struct {
+	Required bool     `json:"required"`
+	Default  string   `json:"default"`
+	Values   []string `json:"values" validate:"required,min=1"`
+	Editable bool     `json:"editable"`
+}
+
+type ConfigItemSpecMultipleOptions struct {
+	Required bool     `json:"required"`
+	Default  []string `json:"default,omitempty"`
+	Values   []string `json:"values" validate:"required,min=1"`
+	Min      *int     `json:"min,omitempty"`
+	Max      *int     `json:"max,omitempty"`
+	Editable bool     `json:"editable"`
+}
+
+type ConfigItem struct {
+	Name            string                         `json:"name" validate:"required,min=1"`
+	Alias           string                         `json:"alias" validate:"required,min=1"`
+	Integer         *ConfigItemSpecInteger         `json:"integer,omitempty"`
+	Boolean         *ConfigItemSpecBoolean         `json:"boolean,omitempty"`
+	String          *ConfigItemSpecString          `json:"string,omitempty"`
+	Option          *ConfigItemSpecOption          `json:"option,omitempty"`
+	MultipleOptions *ConfigItemSpecMultipleOptions `json:"multipleOptions,omitempty"`
 }
 
 type CreateModuleRequest struct {
-	Name       string             `json:"name" validate:"required,dns1123subdomain"`
-	Namespace  *string            `json:"namespace,omitempty" validate:"omitempty,dns1123label"`
-	Workspace  WorkspaceReference `json:"workspace"`
-	Source     ModuleSource       `json:"source"`
-	Config     map[string]any     `json:"config"`
-	Hibernated bool               `json:"hibernated"`
+	Name         string             `json:"name" validate:"required,dns1123subdomain"`
+	Namespace    *string            `json:"namespace,omitempty" validate:"omitempty,dns1123label"`
+	Workspace    WorkspaceReference `json:"workspace"`
+	Helm         *ModuleSpecHelm    `json:"helm,omitempty"`
+	Custom       *ModuleSpecCustom  `json:"custom,omitempty"`
+	Config       map[string]any     `json:"config,omitempty"`
+	ConfigSchema []ConfigItem       `json:"configSchema,omitempty"`
+	Hibernated   bool               `json:"hibernated"`
 }
 
 type ModuleResponse struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
+}
+
+// Conversion functions from handler types to CRD types
+func convertHelmRequestToCRD(req *ModuleSpecHelm) *batchv1.ModuleSpecHelm {
+	if req == nil {
+		return nil
+	}
+
+	helm := &batchv1.ModuleSpecHelm{
+		Namespace: req.Namespace,
+		Chart:     convertHelmChartToCRD(req.Chart),
+		Cleanup: batchv1.ModuleSpecHelmCleanup{
+			RemoveNamespace: req.Cleanup.RemoveNamespace,
+			RemovePVCs:      req.Cleanup.RemovePVCs,
+		},
+		Migration: batchv1.ModuleSpecHelmMigration{
+			PVCs:       req.Migration.PVCs,
+			ConfigMaps: req.Migration.ConfigMaps,
+			Secrets:    req.Migration.Secrets,
+		},
+	}
+
+	if req.ExistingRelease != nil {
+		helm.ExistingRelease = &batchv1.ModuleSpecHelmExistingRelease{
+			Name:      req.ExistingRelease.Name,
+			Namespace: req.ExistingRelease.Namespace,
+		}
+	}
+
+	if req.Values != nil {
+		helm.Values = make([]batchv1.ModuleSpecHelmValues, len(req.Values))
+		for i, v := range req.Values {
+			helm.Values[i] = convertHelmValuesToCRD(v)
+		}
+	}
+
+	if req.Outputs != nil {
+		helm.Outputs = make([]batchv1.ModuleSpecHelmOutput, len(req.Outputs))
+		for i, o := range req.Outputs {
+			helm.Outputs[i] = convertHelmOutputToCRD(o)
+		}
+	}
+
+	return helm
+}
+
+func convertHelmChartToCRD(chart ModuleSpecHelmChart) batchv1.ModuleSpecHelmChart {
+	crd := batchv1.ModuleSpecHelmChart{}
+
+	if chart.Repo != nil {
+		crd.Repo = &batchv1.ModuleSpecHelmChartRepo{
+			URL:     chart.Repo.URL,
+			Chart:   chart.Repo.Chart,
+			Version: chart.Repo.Version,
+		}
+		if chart.Repo.Auth != nil {
+			crd.Repo.Auth = &batchv1.ModuleSpecHelmChartRepoAuth{
+				Name:      chart.Repo.Auth.Name,
+				Namespace: chart.Repo.Auth.Namespace,
+			}
+		}
+	}
+
+	if chart.ConfigMap != nil {
+		crd.ConfigMap = &batchv1.ModuleSpecHelmChartConfigMap{
+			Name:      chart.ConfigMap.Name,
+			Namespace: chart.ConfigMap.Namespace,
+			Key:       chart.ConfigMap.Key,
+		}
+	}
+
+	if chart.Git != nil {
+		crd.Git = &batchv1.ModuleSpecHelmChartGit{
+			Repo:     chart.Git.Repo,
+			Path:     chart.Git.Path,
+			Revision: chart.Git.Revision,
+		}
+		if chart.Git.Auth != nil && chart.Git.Auth.HTTPSSecretRef != nil {
+			crd.Git.Auth = &batchv1.ModuleSpecHelmChartGitAuth{
+				HTTPSSecretRef: &batchv1.ModuleSpecHelmChartGitAuthSecret{
+					Name:      chart.Git.Auth.HTTPSSecretRef.Name,
+					Namespace: chart.Git.Auth.HTTPSSecretRef.Namespace,
+				},
+			}
+		}
+	}
+
+	return crd
+}
+
+func convertHelmValuesToCRD(values ModuleSpecHelmValues) batchv1.ModuleSpecHelmValues {
+	crd := batchv1.ModuleSpecHelmValues{
+		File: values.File,
+	}
+
+	if values.ConfigMap != nil {
+		crd.ConfigMap = &batchv1.ModuleSpecHelmValuesConfigMap{
+			Name:      values.ConfigMap.Name,
+			Namespace: values.ConfigMap.Namespace,
+			Key:       values.ConfigMap.Key,
+		}
+	}
+
+	if values.Raw != nil {
+		rawJSON, _ := json.Marshal(values.Raw)
+		crd.Raw = &runtime.RawExtension{Raw: rawJSON}
+	}
+
+	return crd
+}
+
+func convertHelmOutputToCRD(output ModuleSpecHelmOutput) batchv1.ModuleSpecHelmOutput {
+	crd := batchv1.ModuleSpecHelmOutput{
+		Name: output.Name,
+	}
+
+	if output.Value != nil {
+		valueJSON, _ := json.Marshal(output.Value)
+		crd.Value = &apiextensionsv1.JSON{Raw: valueJSON}
+	}
+
+	if output.ValueFrom != nil && output.ValueFrom.Secret != nil {
+		crd.ValueFrom = &batchv1.ModuleSpecHelmOutputValueFrom{
+			Secret: &batchv1.ModuleSpecHelmOutputValueFromSecret{
+				Name:      output.ValueFrom.Secret.Name,
+				Namespace: output.ValueFrom.Secret.Namespace,
+				Key:       output.ValueFrom.Secret.Key,
+			},
+		}
+	}
+
+	return crd
+}
+
+func convertCustomRequestToCRD(req *ModuleSpecCustom) *batchv1.ModuleSpecCustom {
+	if req == nil {
+		return nil
+	}
+
+	custom := &batchv1.ModuleSpecCustom{
+		Image:            req.Image,
+		ImagePullSecrets: req.ImagePullSecrets,
+	}
+
+	if req.Permissions != nil {
+		custom.Permissions = make([]batchv1.CustomModulePermissionType, len(req.Permissions))
+		for i, p := range req.Permissions {
+			custom.Permissions[i] = batchv1.CustomModulePermissionType(p)
+		}
+	}
+
+	return custom
+}
+
+func convertConfigSchemaRequestToCRD(items []ConfigItem) []batchv1.ConfigItem {
+	if items == nil {
+		return nil
+	}
+
+	crdItems := make([]batchv1.ConfigItem, len(items))
+	for i, item := range items {
+		crdItems[i] = batchv1.ConfigItem{
+			Name:  item.Name,
+			Alias: item.Alias,
+		}
+
+		if item.Integer != nil {
+			crdItems[i].Integer = &batchv1.ConfigItemSpecInteger{
+				Required: item.Integer.Required,
+				Default:  item.Integer.Default,
+				Min:      item.Integer.Min,
+				Max:      item.Integer.Max,
+				Editable: item.Integer.Editable,
+			}
+		}
+
+		if item.Boolean != nil {
+			crdItems[i].Boolean = &batchv1.ConfigItemSpecBoolean{
+				Required: item.Boolean.Required,
+				Default:  item.Boolean.Default,
+				Editable: item.Boolean.Editable,
+			}
+		}
+
+		if item.String != nil {
+			crdItems[i].String = &batchv1.ConfigItemSpecString{
+				Required: item.String.Required,
+				Default:  item.String.Default,
+				Regex:    item.String.Regex,
+				Editable: item.String.Editable,
+			}
+		}
+
+		if item.Option != nil {
+			crdItems[i].Option = &batchv1.ConfigItemSpecOption{
+				Required: item.Option.Required,
+				Default:  item.Option.Default,
+				Values:   item.Option.Values,
+				Editable: item.Option.Editable,
+			}
+		}
+
+		if item.MultipleOptions != nil {
+			crdItems[i].MultipleOptions = &batchv1.ConfigItemSpecMultipleOptions{
+				Required: item.MultipleOptions.Required,
+				Default:  item.MultipleOptions.Default,
+				Values:   item.MultipleOptions.Values,
+				Min:      item.MultipleOptions.Min,
+				Max:      item.MultipleOptions.Max,
+				Editable: item.MultipleOptions.Editable,
+			}
+		}
+	}
+
+	return crdItems
 }
 
 func (h ModuleHandler) CreateHandle(w http.ResponseWriter, r *http.Request) {
@@ -86,78 +418,36 @@ func (h ModuleHandler) CreateHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate that at least one source is provided
-	sourceCount := 0
-	if requestData.Source.Raw != nil {
-		sourceCount++
-	}
-	if requestData.Source.HttpURL != nil {
-		sourceCount++
-	}
-	if requestData.Source.ConfigMap != nil {
-		sourceCount++
-	}
-	if requestData.Source.ExistingHelmRelease != nil {
-		sourceCount++
-	}
-
-	if sourceCount == 0 {
+	// Validate that either Helm or Custom is provided, but not both
+	if requestData.Helm == nil && requestData.Custom == nil {
 		response.JSONBodyValidationError(w, map[string]string{
-			"CreateModuleRequest.source": "At least one source must be provided: " +
-				"raw, httpURL, configMap, or existingHelmRelease.",
+			"CreateModuleRequest": "Either 'helm' or 'custom' must be provided.",
 		})
 		return
 	}
 
-	var sourceRawBytes []byte = nil
-	if requestData.Source.Raw != nil {
-		sourceRawBytes = []byte(*requestData.Source.Raw)
+	if requestData.Helm != nil && requestData.Custom != nil {
+		response.JSONBodyValidationError(w, map[string]string{
+			"CreateModuleRequest": "Only one of 'helm' or 'custom' can be provided, not both.",
+		})
+		return
 	}
 
-	moduleSource := forkspacer.ModuleSource{
-		Raw:     sourceRawBytes,
-		HttpURL: requestData.Source.HttpURL,
+	// Convert handler types to CRD types
+	var helmSpec *batchv1.ModuleSpecHelm
+	var customSpec *batchv1.ModuleSpecCustom
+	var configSchema []batchv1.ConfigItem
+
+	if requestData.Helm != nil {
+		helmSpec = convertHelmRequestToCRD(requestData.Helm)
 	}
 
-	if requestData.Source.ConfigMap != nil {
-		moduleSource.ConfigMap = &forkspacer.ModuleSourceConfigMapRef{
-			Name:      requestData.Source.ConfigMap.Name,
-			Namespace: requestData.Source.ConfigMap.Namespace,
-			Key:       requestData.Source.ConfigMap.Key,
-		}
+	if requestData.Custom != nil {
+		customSpec = convertCustomRequestToCRD(requestData.Custom)
 	}
 
-	if requestData.Source.ExistingHelmRelease != nil {
-		moduleSource.ExistingHelmRelease = &forkspacer.ModuleSourceExistingHelmReleaseRef{
-			Name:      requestData.Source.ExistingHelmRelease.Name,
-			Namespace: requestData.Source.ExistingHelmRelease.Namespace,
-			Values:    requestData.Source.ExistingHelmRelease.Values,
-		}
-
-		// Set chart source
-		if requestData.Source.ExistingHelmRelease.ChartSource.ConfigMap != nil {
-			moduleSource.ExistingHelmRelease.ChartSource.ConfigMap = &forkspacer.ModuleSourceConfigMapRef{
-				Name:      requestData.Source.ExistingHelmRelease.ChartSource.ConfigMap.Name,
-				Namespace: requestData.Source.ExistingHelmRelease.ChartSource.ConfigMap.Namespace,
-				Key:       requestData.Source.ExistingHelmRelease.ChartSource.ConfigMap.Key,
-			}
-		}
-
-		if requestData.Source.ExistingHelmRelease.ChartSource.Repository != nil {
-			moduleSource.ExistingHelmRelease.ChartSource.Repository = &forkspacer.ModuleSourceChartRepository{
-				URL:     requestData.Source.ExistingHelmRelease.ChartSource.Repository.URL,
-				Chart:   requestData.Source.ExistingHelmRelease.ChartSource.Repository.Chart,
-				Version: requestData.Source.ExistingHelmRelease.ChartSource.Repository.Version,
-			}
-		}
-
-		if requestData.Source.ExistingHelmRelease.ChartSource.Git != nil {
-			moduleSource.ExistingHelmRelease.ChartSource.Git = &forkspacer.ModuleSourceChartGit{
-				Repo:     requestData.Source.ExistingHelmRelease.ChartSource.Git.Repo,
-				Path:     requestData.Source.ExistingHelmRelease.ChartSource.Git.Path,
-				Revision: requestData.Source.ExistingHelmRelease.ChartSource.Git.Revision,
-			}
-		}
+	if requestData.ConfigSchema != nil {
+		configSchema = convertConfigSchemaRequestToCRD(requestData.ConfigSchema)
 	}
 
 	module, err := h.forkspacerModuleService.Create(r.Context(), forkspacer.ModuleCreateIn{
@@ -167,9 +457,11 @@ func (h ModuleHandler) CreateHandle(w http.ResponseWriter, r *http.Request) {
 			Name:      requestData.Workspace.Name,
 			Namespace: requestData.Workspace.Namespace,
 		},
-		Source:     moduleSource,
-		Config:     requestData.Config,
-		Hibernated: requestData.Hibernated,
+		Helm:         helmSpec,
+		Custom:       customSpec,
+		Config:       requestData.Config,
+		ConfigSchema: configSchema,
+		Hibernated:   requestData.Hibernated,
 	})
 	if err != nil {
 		response.JSONBadRequest(w, err.Error())
@@ -308,26 +600,13 @@ func (h ModuleHandler) ListHandle(w http.ResponseWriter, r *http.Request) {
 			message = *module.Status.Message
 		}
 
-		// Extract module type from source
-		moduleType := "Unknown"
-		if module.Spec.Source.Raw != nil && len(module.Spec.Source.Raw.Raw) > 0 {
-			var sourceData map[string]any
-			if err := json.Unmarshal(module.Spec.Source.Raw.Raw, &sourceData); err == nil {
-				if kind, ok := sourceData["kind"].(string); ok {
-					moduleType = kind
-				}
-			}
-		} else if module.Spec.Source.HttpURL != nil {
-			moduleType = "Remote"
-		}
-
 		responseData.Modules[i] = ModuleListItem{
 			Name:       module.Name,
 			Namespace:  module.Namespace,
 			Phase:      string(module.Status.Phase),
 			Hibernated: hibernated,
 			Message:    message,
-			Type:       moduleType,
+			Type:       module.Status.Source,
 			Workspace: &WorkspaceReference{
 				Name:      module.Spec.Workspace.Name,
 				Namespace: module.Spec.Workspace.Namespace,
